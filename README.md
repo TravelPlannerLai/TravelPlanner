@@ -1,6 +1,4 @@
-<<<<<<< HEAD
-# TravelPlanner
-=======
+
 # TravelPlanner 项目启动指南
 
 ## 一、前置条件
