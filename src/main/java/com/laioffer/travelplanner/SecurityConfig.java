@@ -1,7 +1,8 @@
-package com.laioffer.travelplanner.config;
+package com.laioffer.travelplanner;
 
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configuration.*;
@@ -9,7 +10,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
+import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.security.web.*;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 
 import javax.sql.DataSource;
@@ -24,12 +27,12 @@ public class SecurityConfig {
      * 1) 用 JDBC 方式操作 users / authorities
      */
     @Bean
-    public JdbcUserDetailsManager userDetailsManager(DataSource ds) {
+    UserDetailsManager userDetailsManager(DataSource ds) {
         JdbcUserDetailsManager mgr = new JdbcUserDetailsManager(ds);
 
-        // 注册新用户时，向 users 表插入（username, email, password, enabled）
+        // 注册新用户时，向 users 表插入（ email, password, enabled）
         mgr.setCreateUserSql(
-                "INSERT INTO users (username, email, password, enabled) VALUES (?, ?, ?, ?)"
+                "INSERT INTO users (email, password, enabled) VALUES (?, ?, ?)"
         );
 
         // 授权时，向 authorities 表插入。因为 authorities.user_id 是 FK，所以这里通过子查询拿 user_id
@@ -79,6 +82,9 @@ public class SecurityConfig {
                         // 其余接口一律需要登录
                         .anyRequest().authenticated()
                 )
+                .exceptionHandling()
+                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                .and()
                 // formLogin：默认拦截 /login GET + POST
                 .formLogin(form -> form
                         .loginProcessingUrl("/api/user/login")
