@@ -50,8 +50,8 @@ public class TripController {
     public List<TripEntity> getUserTrips(
             @AuthenticationPrincipal User user
     ) {
-
-        UUID userId = UUID.fromString(user.getUsername());
+        UUID userId = authService.getIdByEmail(user.getUsername());
+        System.out.println(userId);
         return tripService.getTripsByUserId(userId);
     }
 
