@@ -14,7 +14,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- 2. users 表：存注册用户
 CREATE TABLE IF NOT EXISTS users (
                                      user_id  UUID    PRIMARY KEY DEFAULT uuid_generate_v4(),
-                                     username TEXT    NOT NULL,
+                                     username TEXT,
                                      email    TEXT    NOT NULL UNIQUE,
                                      password TEXT    NOT NULL,
                                      enabled  BOOLEAN NOT NULL DEFAULT TRUE
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS trips (
                                      user_id    UUID    NOT NULL REFERENCES users(user_id),
                                      city_id    UUID    NOT NULL REFERENCES cities(city_id),
                                      start_date DATE    NOT NULL,
-                                     days       INT     NOT NULL CHECK (days BETWEEN 1 AND 15)
+                                     days       INT     CHECK (days BETWEEN 1 AND 15)
 );
 
 -- 6. day_plans 表：某行程每天计划
@@ -75,3 +75,37 @@ CREATE TABLE IF NOT EXISTS authorities (
                                            user_id   UUID     NOT NULL REFERENCES users(user_id),
                                            authority TEXT     NOT NULL
 );
+
+-- Insert sample cities with fixed UUIDs for development consistency
+INSERT INTO cities (city_id, name, country, lat, lon)
+VALUES
+    -- Paris, France
+    ('f47ac10b-58cc-4372-a567-0e02b2c3d478', 'Paris', 'France', 48.8566, 2.3522),
+
+    -- Tokyo, Japan
+    ('1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed', 'Tokyo', 'Japan', 35.6762, 139.6503),
+
+    -- New York, USA
+    ('9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d', 'New York', 'USA', 40.7128, -74.0060),
+
+    -- London, UK
+    ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'London', 'UK', 51.5074, -0.1278),
+
+    -- Sydney, Australia
+    ('550e8400-e29b-41d4-a716-446655440000', 'Sydney', 'Australia', -33.8688, 151.2093),
+
+    -- Berlin, Germany
+    ('6ba7b810-9dad-11d1-80b4-00c04fd430c8', 'Berlin', 'Germany', 52.5200, 13.4050),
+
+    -- Rome, Italy
+    ('6ba7b811-9dad-11d1-80b4-00c04fd430c8', 'Rome', 'Italy', 41.9028, 12.4964),
+
+    -- Beijing, China
+    ('6ba7b812-9dad-11d1-80b4-00c04fd430c8', 'Beijing', 'China', 39.9042, 116.4074),
+
+    -- Rio de Janeiro, Brazil
+    ('6ba7b813-9dad-11d1-80b4-00c04fd430c8', 'Rio de Janeiro', 'Brazil', -22.9068, -43.1729),
+
+    -- Cape Town, South Africa
+    ('6ba7b814-9dad-11d1-80b4-00c04fd430c8', 'Cape Town', 'South Africa', -33.9249, 18.4241)
+ON CONFLICT (city_id) DO NOTHING;
