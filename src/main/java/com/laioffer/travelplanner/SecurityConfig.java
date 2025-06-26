@@ -2,90 +2,61 @@ package com.laioffer.travelplanner;
 
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.*;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
-import org.springframework.security.config.annotation.web.configuration.*;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.*;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.provisioning.UserDetailsManager;
-import org.springframework.security.web.*;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
+import org.springframework.web.cors.*;
 
 import javax.sql.DataSource;
 import java.io.PrintWriter;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    /**
-     * 1) 用 JDBC 方式操作 users / authorities
-     */
     @Bean
-    UserDetailsManager userDetailsManager(DataSource ds) {
+    public UserDetailsManager userDetailsManager(DataSource ds) {
         JdbcUserDetailsManager mgr = new JdbcUserDetailsManager(ds);
 
-        // 注册新用户时，向 users 表插入（ email, password, enabled）
-        mgr.setCreateUserSql(
-                "INSERT INTO users (email, password, enabled) VALUES (?, ?, ?)"
-        );
-
-        // 授权时，向 authorities 表插入。因为 authorities.user_id 是 FK，所以这里通过子查询拿 user_id
+        mgr.setCreateUserSql("INSERT INTO users (email, password, enabled) VALUES (?, ?, ?)");
         mgr.setCreateAuthoritySql(
-                "INSERT INTO authorities (user_id, authority) " +
-                        "VALUES ((SELECT user_id FROM users WHERE email = ?), ?)"
-        );
-
-        // 登录校验时，先查 users
-        mgr.setUsersByUsernameQuery(
-                "SELECT email, password, enabled FROM users WHERE email = ?"
-        );
-
-        // 再查 authorities；注意必须返回两列 (username/email, authority)，否则 Spring 内部会去取第 2 列就越界
+                "INSERT INTO authorities (user_id, authority) VALUES ((SELECT user_id FROM users WHERE email = ?), ?)");
+        mgr.setUsersByUsernameQuery("SELECT email, password, enabled FROM users WHERE email = ?");
         mgr.setAuthoritiesByUsernameQuery(
-                "SELECT u.email, a.authority " +
-                        "  FROM authorities a " +
-                        "  JOIN users u ON a.user_id = u.user_id " +
-                        " WHERE u.email = ?"
-        );
-
+                "SELECT u.email, a.authority FROM authorities a JOIN users u ON a.user_id = u.user_id WHERE u.email = ?");
         return mgr;
     }
 
-    /**
-     * 2) 密码加密器（Delegating + BCrypt）
-     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 
-    /**
-     * 3) 安全链：放行注册/登录/登出接口，其它都要认证
-     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // 跨域配置
                 .authorizeHttpRequests(auth -> auth
-                        // 静态资源
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
-                        // 自己定义的注册 / 登录 / 登出 接口
                         .requestMatchers("/api/user/register", "/api/user/login", "/api/user/logout").permitAll()
-                        // 查询所有用户（可选）
-                        .requestMatchers("/api/users").permitAll()
-                        // 其余接口一律需要登录
+                        .requestMatchers(HttpMethod.GET, "/api/users").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling()
                 .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                 .and()
-                // formLogin：默认拦截 /login GET + POST
                 .formLogin(form -> form
                         .loginProcessingUrl("/api/user/login")
                         .successHandler((req, res, auth) -> {
@@ -103,13 +74,26 @@ public class SecurityConfig {
                             w.flush();
                         })
                 )
-                // logout：默认拦截 /logout
                 .logout(logout -> logout
                         .logoutUrl("/api/user/logout")
                         .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler())
-                )
-        ;
+                );
 
         return http.build();
+    }
+
+    // 配置全局 CORS 策略，允许来自 http://localhost:3000 的前端访问后端 API。
+    // 确保前端项目的 package.json 中添加如下配置：
+    // "proxy": "http://localhost:8080"
+    private CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("http://localhost:3000"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 }
