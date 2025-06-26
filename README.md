@@ -3,73 +3,91 @@
 
 ## 一、前置条件
 
-1. **Docker & Docker Compose**
-2. **Java 17 SDK**
-3. IntelliJ IDEA（或其他支持 Java 的 IDE）
+1. 安装 **Java JDK 17+**（推荐 JDK 21）
+2. 安装 **Docker & Docker Compose**
+3. 使用 IDE（推荐 IntelliJ IDEA，需安装 Gradle 插件）
 
-## 二、启动步骤
+---
+
+## 二、项目启动步骤
 
 ### 0. 环境要求
 
-* 本地需安装 **Java JDK 17+**（推荐使用 JDK 21）。
+- IntelliJ → `Project Structure → SDK`：选择你安装的 JDK（17/21）
+- `Language level` 设置为 JDK 对应版本
+- Docker 启动并可用（建议使用 Docker Desktop）
 
-    * IntelliJ -> **Project Structure → SDK** 选你安装的 JDK。
-    * **Language level** 设为与 toolchain 一致（17 或 21）。
-* Docker 和 Docker Compose 应安装：用于启动 PostgreSQL 容器。
-* IDE（可选）：IntelliJ IDEA，已安装 Gradle 插件。
+---
 
-### 1. 启动数据库（Docker Compose）
+### 1. 启动数据库服务
 
-在项目根目录下，通过命令行执行：
+在项目根目录执行以下命令：
 
 ```bash
 docker-compose up -d
 ```
 
-或者在本机的 **Docker Desktop**（或 **Docker** 应用）里，打开 **travel-plan-db** 服务，点击旁边的 **Start** 按钮启动。
+或在 Docker Desktop 中手动启动 `travel-plan-db` 服务。
 
-* 容器名：`travel-plan-db`
-* Postgres 映射到本机端口：`5434` → 容器内 `5432`
-* 数据库：`travel_plan`
-* 用户名：`postgres`
-* 密码：`secret123`
+数据库容器配置如下：
 
-### 2. 导入建表脚本 导入建表脚本
+| 项目         | 值               |
+|--------------|------------------|
+| 容器名       | travel-plan-db    |
+| 映射端口     | 本地 5434 → 容器 5432 |
+| 数据库名     | travel_plan       |
+| 用户名       | postgres          |
+| 密码         | secret123         |
 
-`docker/database-init.sql` 会在容器启动时自动执行，无需手动操作。
+---
 
-### 3. 运行后端服务
+### 2. 自动执行建表脚本
 
-1. 在 IntelliJ 项目视图中定位到：
+`docker/database-init.sql` 会在容器首次启动时自动执行，自动完成建表，无需手动导入。
 
+---
 
-src/main/java/com/laioffer/travelplanner/TravelPlannerApplication.java
+### 3. 启动后端服务
 
-````
-2. 点击类文件上方的绿色 ▶️ **Run ‘TravelPlannerApplication’** 按钮
-3. 应用默认启动在 `http://localhost:8080`
+1. 打开类：
+   ```
+   src/main/java/com/laioffer/travelplanner/TravelPlannerApplication.java
+   ```
+2. 点击类顶部的绿色 ▶️ 图标运行项目
+3. 启动成功后，服务运行在：
+   ```
+   http://localhost:8080
+   ```
+
+---
 
 ### 4. 数据源配置
 
-已在 `application.yml` 中配置：
+默认配置已在 `application.yml` 中设置：
+
 ```yaml
 spring:
-datasource:
- url: jdbc:postgresql://localhost:5434/travel_plan
- username: postgres
- password: secret123
- driver-class-name: org.postgresql.Driver
+  datasource:
+    url: jdbc:postgresql://localhost:5434/travel_plan
+    username: postgres
+    password: secret123
+    driver-class-name: org.postgresql.Driver
 
 server:
-port: 8080
-````
+  port: 8080
+```
 
-如需修改端口或凭据，可直接编辑该文件或使用环境变量覆盖。
+如需修改端口或数据库配置，可直接修改该文件。
+
+---
 
 ## 三、Postman 测试脚本
-（signin,signup,logout）apis
+**(User APIs）
 
-导入下面 JSON 到 Postman：
+导入以下 JSON 到 Postman：
+
+<details>
+<summary>点击展开 JSON</summary>
 
 ```json
 {
@@ -92,7 +110,7 @@ port: 8080
         "url": {
           "raw": "{{baseUrl}}/api/user/register",
           "host": ["{{baseUrl}}"],
-          "path": ["api","user","register"]
+          "path": ["api", "user", "register"]
         }
       }
     },
@@ -113,7 +131,7 @@ port: 8080
         "url": {
           "raw": "{{baseUrl}}/api/user/login",
           "host": ["{{baseUrl}}"],
-          "path": ["api","user","login"]
+          "path": ["api", "user", "login"]
         }
       }
     },
@@ -124,7 +142,7 @@ port: 8080
         "url": {
           "raw": "{{baseUrl}}/api/users",
           "host": ["{{baseUrl}}"],
-          "path": ["api","users"]
+          "path": ["api", "users"]
         }
       }
     },
@@ -138,7 +156,7 @@ port: 8080
         "url": {
           "raw": "{{baseUrl}}/api/user/logout",
           "host": ["{{baseUrl}}"],
-          "path": ["api","user","logout"]
+          "path": ["api", "user", "logout"]
         }
       }
     }
@@ -149,14 +167,94 @@ port: 8080
   ]
 }
 ```
+</details>
 
-导入后即可依次执行：
+导入后依次执行：
 
-1. Register User  → 应返回 200
-2. Login User     → 返回 200，并自动保存 `JSESSIONID`
-3. Get All Users  → 返回 200 + 用户列表
-4. Logout User    → 返回 200
+1.  **Register User** → 注册新用户
+2.  **Login User** → 登录获取 `JSESSIONID`（自动保存）
+3.  **Get All Users** → 获取所有注册用户
+4.  **Logout User** → 注销登录
+
+**（Trip APIs）
+
+导入以下 JSON 到 Postman：
+
+<details>
+<summary>点击展开 JSON</summary>
+
+```json
+{
+  "info": {
+    "name": "TravelPlanner Trip APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Trip",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Cookie", "value": "JSESSIONID={{JSESSIONID}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cityId\": \"f47ac10b-58cc-4372-a567-0e02b2c3d478\",\n  \"startDate\": \"2025-07-01\",\n  \"days\": 5\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/trips",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "trips"]
+        }
+      }
+    },
+    {
+      "name": "Get My Trips",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Cookie", "value": "JSESSIONID={{JSESSIONID}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/trips",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "trips"]
+        }
+      }
+    },
+    {
+      "name": "Get Trip by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Cookie", "value": "JSESSIONID={{JSESSIONID}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/trips/{{tripId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "trips", "{{tripId}}"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "JSESSIONID", "value": "" },
+    { "key": "tripId", "value": "REPLACE_WITH_TRIP_ID" }
+  ]
+}
+```
+</details>
+
+导入后依次执行：
+
+1.  **Create Trip**
+  - Body 中填写城市 ID（如 Paris: `f47ac10b-58cc-4372-a567-0e02b2c3d478`）、开始日期和天数
+2.  **Get My Trips**
+  - 获取当前登录用户的所有行程
+3.  **Get Trip by ID**
+  - 替换 `tripId` 参数为上一步返回中的某个 ID
 
 ---
 
->>>>>>> origin/backend-murphy
