@@ -31,15 +31,18 @@ CREATE TABLE IF NOT EXISTS cities (
 
 -- 4. pois 表：存景点/酒店/餐厅等
 CREATE TABLE IF NOT EXISTS pois (
-                                    poi_id        UUID     PRIMARY KEY DEFAULT uuid_generate_v4(),
-                                    city_id       UUID     REFERENCES cities(city_id),
-                                    name          TEXT     NOT NULL,
-                                    category      TEXT,
-                                    lat           DOUBLE PRECISION,
-                                    lon           DOUBLE PRECISION,
-                                    opening_hours JSONB,
-                                    min_price     NUMERIC(8,2),
-                                    max_price     NUMERIC(8,2)
+                                    poi_id              UUID                PRIMARY KEY DEFAULT uuid_generate_v4(),
+                                    city_id             UUID                NOT NULL REFERENCES cities(city_id),
+                                    place_id            TEXT                UNIQUE NOT NULL,
+                                    name                TEXT                NOT NULL,
+                                    formatted_address   TEXT                NOT NULL,
+                                    types               JSONB
+                                    lat                 DOUBLE PRECISION    NOT NULL,
+                                    lng                 DOUBLE PRECISION    NOT NULL,
+                                    opening_hours       JSONB,
+                                    rating              NUMERIC(2,1),
+                                    user_ratings_total  INT,
+                                    photo_reference     TEXT
 );
 
 -- 5. trips 表：用户行程
@@ -53,20 +56,19 @@ CREATE TABLE IF NOT EXISTS trips (
 
 -- 6. day_plans 表：某行程每天计划
 CREATE TABLE IF NOT EXISTS day_plans (
-                                         plan_id   UUID    PRIMARY KEY DEFAULT uuid_generate_v4(),
-                                         trip_id   UUID    REFERENCES trips(trip_id),
-                                         plan_date DATE    NOT NULL,
-                                         max_hours INT     DEFAULT 8
+                                         plan_id    UUID    PRIMARY KEY DEFAULT uuid_generate_v4(),
+                                         trip_id    UUID    REFERENCES trips(trip_id),
+                                         plan_date  DATE    NOT NULL,
+                                         day_number INT     NOT NULL,
+
 );
 
 -- 7. poi_orders 表：某天要去的 POI 排序
-CREATE TABLE IF NOT EXISTS poi_orders (
-                                          order_id  UUID    PRIMARY KEY DEFAULT uuid_generate_v4(),
-                                          plan_id   UUID    REFERENCES day_plans(plan_id),
-                                          poi_id    UUID    REFERENCES pois(poi_id),
-                                          sequence  INT     NOT NULL,
-                                          est_start TIME,
-                                          est_end   TIME
+CREATE TABLE IF NOT EXISTS route (
+                                          route_id      UUID    PRIMARY KEY DEFAULT uuid_generate_v4(),
+                                          plan_id       UUID    NOT NULL REFERENCES day_plans(plan_id),
+                                          poi_id        UUID    NOT NULL REFERENCES pois(poi_id),
+                                          visit_order   INT     NOT NULL,
 );
 
 -- 8. authorities 表：存储用户角色
