@@ -7,6 +7,6 @@ import java.util.UUID;
 public record DayPlanWithRouteResponse(
         UUID dayPlanId,
         int dayNumber,
-        LocalDate date,
+        LocalDate planDate,
         List<PoiWithOrderResponse> pois
 ) {}

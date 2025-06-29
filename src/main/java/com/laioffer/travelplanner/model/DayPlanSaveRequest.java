@@ -9,6 +9,6 @@ import java.util.UUID;
 
 public record DayPlanSaveRequest(
         int dayNumber,
-        LocalDate date,
+        LocalDate planDate,
         List<PoiWithOrderRequest> pois
 ) {}

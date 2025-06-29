@@ -1,5 +1,8 @@
 package com.laioffer.travelplanner.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.laioffer.travelplanner.entity.DayPlanEntity;
 import com.laioffer.travelplanner.entity.PoiEntity;
 import com.laioffer.travelplanner.entity.RouteEntity;
@@ -32,12 +35,13 @@ public class DayPlanService {
     }
 
     public void saveDayPlanWithRouteAndPois(UUID tripId, DayPlanSaveRequest request) {
+
         // Save DayPlan
         DayPlanEntity dayPlan = new DayPlanEntity(
-                UUID.randomUUID(),
+                null,
                 tripId,
                 request.dayNumber(),
-                request.date()
+                request.planDate()
         );
         dayPlan = dayPlanRepository.save(dayPlan);
 
@@ -49,16 +53,34 @@ public class DayPlanService {
             if (existingPoi.isPresent()) {
                 savedPoi = existingPoi.get();
             } else {
+
+                ObjectMapper mapper = new ObjectMapper();
+                String typesStr;
+                String openingHoursStr;
+
+
+                try {
+                    typesStr = poiReq.types() != null
+                            ? mapper.writeValueAsString(poiReq.types())
+                            : null;
+
+                    openingHoursStr = poiReq.openingHours() != null
+                            ? mapper.writeValueAsString(poiReq.openingHours())
+                            : null;
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException("JSON serialization failed", e);
+                }
+
                 savedPoi = new PoiEntity(
-                        UUID.randomUUID(),
+                        null,
                         poiReq.cityId(),
                         poiReq.placeId(),
                         poiReq.name(),
                         poiReq.formattedAddress(),
-                        poiReq.types(),
+                        typesStr,
                         poiReq.lat(),
                         poiReq.lng(),
-                        poiReq.openingHours(),
+                        openingHoursStr,
                         poiReq.rating(),
                         poiReq.userRatingsTotal(),
                         poiReq.photoReference()
@@ -68,7 +90,7 @@ public class DayPlanService {
 
             // Save Route
             RouteEntity route = new RouteEntity(
-                    UUID.randomUUID(),
+                    null,
                     dayPlan.planId(),
                     savedPoi.poiId(),
                     poiReq.visitOrder()
@@ -90,6 +112,22 @@ public class DayPlanService {
                         PoiEntity poi = poiRepository.findById(route.poiId())
                                 .orElseThrow(() -> new RuntimeException("POI not found"));
 
+                        ObjectMapper mapper = new ObjectMapper();
+
+                        JsonNode typesNode = null;
+                        JsonNode openingHours = null;
+
+                        try {
+                            if (poi.openingHours() != null) {
+                                openingHours = mapper.readTree(poi.openingHours());
+                            }
+                            if (poi.types() != null) {
+                                typesNode = mapper.readTree(poi.types());
+                            }
+                        } catch (JsonProcessingException e) {
+                            throw new RuntimeException("JSON parse failed", e);
+                        }
+
                         return new PoiWithOrderResponse(
                                 poi.poiId(),
                                 poi.name(),
@@ -98,9 +136,9 @@ public class DayPlanService {
                                 poi.lng(),
                                 poi.rating(),
                                 poi.userRatingsTotal(),
-                                poi.types(),
+                                typesNode,
                                 poi.photoReference(),
-                                poi.openingHours(),
+                                openingHours,
                                 route.visitOrder()
                                 );
                     })
@@ -109,7 +147,7 @@ public class DayPlanService {
             result.add(new DayPlanWithRouteResponse(
                     plan.planId(),
                     plan.dayNumber(),
-                    plan.date(),
+                    plan.planDate(),
                     pois
             ));
         }

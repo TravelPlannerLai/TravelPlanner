@@ -1,5 +1,5 @@
 -- 0. 如果存在旧的表，先删掉（按依赖关系顺序）
-DROP TABLE IF EXISTS poi_orders;
+DROP TABLE IF EXISTS route;
 DROP TABLE IF EXISTS day_plans;
 DROP TABLE IF EXISTS trips;
 DROP TABLE IF EXISTS authorities;
@@ -36,10 +36,10 @@ CREATE TABLE IF NOT EXISTS pois (
                                     place_id            TEXT                UNIQUE NOT NULL,
                                     name                TEXT                NOT NULL,
                                     formatted_address   TEXT                NOT NULL,
-                                    types               JSONB
+                                    types               TEXT,
                                     lat                 DOUBLE PRECISION    NOT NULL,
                                     lng                 DOUBLE PRECISION    NOT NULL,
-                                    opening_hours       JSONB,
+                                    opening_hours       TEXT,
                                     rating              NUMERIC(2,1),
                                     user_ratings_total  INT,
                                     photo_reference     TEXT
@@ -57,9 +57,9 @@ CREATE TABLE IF NOT EXISTS trips (
 -- 6. day_plans 表：某行程每天计划
 CREATE TABLE IF NOT EXISTS day_plans (
                                          plan_id    UUID    PRIMARY KEY DEFAULT uuid_generate_v4(),
-                                         trip_id    UUID    REFERENCES trips(trip_id),
+                                         trip_id    UUID    NOT NULL REFERENCES trips(trip_id),
                                          plan_date  DATE    NOT NULL,
-                                         day_number INT     NOT NULL,
+                                         day_number INT     NOT NULL
 
 );
 
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS route (
                                           route_id      UUID    PRIMARY KEY DEFAULT uuid_generate_v4(),
                                           plan_id       UUID    NOT NULL REFERENCES day_plans(plan_id),
                                           poi_id        UUID    NOT NULL REFERENCES pois(poi_id),
-                                          visit_order   INT     NOT NULL,
+                                          visit_order   INT     NOT NULL
 );
 
 -- 8. authorities 表：存储用户角色

@@ -24,19 +24,20 @@ public class TripController {
     }
 
     @PostMapping
-    public void createTrip(
+    public UUID createTrip(
             @AuthenticationPrincipal User user,
             @RequestBody CreateTripRequest request) {
 
         // get userId from authenticated user
         UUID userId = authService.getIdByEmail(user.getUsername());
 
-        tripService.createTrip(
+        return tripService.createTrip(
                 userId,
                 request.cityId(),
                 request.startDate(),
                 request.days()
         );
+
     }
 
     @GetMapping("/{tripId}")

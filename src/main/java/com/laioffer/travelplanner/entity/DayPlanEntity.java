@@ -11,5 +11,5 @@ public record DayPlanEntity(
         @Id UUID planId,
         UUID tripId,
         int dayNumber,
-        LocalDate date
+        LocalDate planDate
 ) {}
