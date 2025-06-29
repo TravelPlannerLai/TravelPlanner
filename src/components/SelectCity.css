@@ -1,0 +1,65 @@
+.select-city-page {
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-image: url("../../public/static/city.jpg"); /* Adjust path as needed */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .select-city-page .select-city-container {
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    width: 350px;
+  }
+  
+  .select-city-page h1 {
+    margin-bottom: 20px;
+    color: #333;
+  }
+  
+  .select-city-page label {
+    font-weight: bold;
+    margin-right: 10px;
+  }
+  
+  .select-city-page select {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  
+  .select-city-page button {
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .select-city-page button:hover {
+    background-color: #0056b3;
+  }
+  
+  .select-city-page h2 {
+    color: #007bff;
+  }
+  
+  .select-city-page strong {
+    color: #333;
+  }
+  
