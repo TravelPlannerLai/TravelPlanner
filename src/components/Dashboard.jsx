@@ -80,7 +80,7 @@ const Dashboard = () => {
           selectedRoute={selectedRoute}
         />
 
-        {/* 地图区域 */}
+        {/* 地图区域 - 恢复完整的 MapArea */}
         <MapArea
           currentCity={currentCity}
           selectedDays={selectedDays}

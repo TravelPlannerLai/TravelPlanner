@@ -8,7 +8,6 @@ import {
   Filter,
   Star,
   Users,
-  Wallet,
   MapPin,
 } from "lucide-react";
 
