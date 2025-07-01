@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15
+    container_name: travel-plan-db
+    environment:
+      POSTGRES_DB: travel_plan
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret123
+    ports:
+      - "5434:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./docker/database-init.sql:/docker-entrypoint-initdb.d/database-init.sql:ro
+
+volumes:
+  db_data:

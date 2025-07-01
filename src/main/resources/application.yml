@@ -1,0 +1,27 @@
+spring:
+  # ?? 1. ????? ??
+  datasource:
+    url: jdbc:postgresql://localhost:5434/travel_plan
+    username: postgres
+    password: secret123
+    driver-class-name: org.postgresql.Driver
+
+  # ?? 2. SQL ??? ??
+  sql:
+    init:
+      # ????? INIT_DB ????? always???????
+      mode: ${INIT_DB:always}
+      # ???? classpath ????? database-init.sql
+      schema-locations: classpath:database-init.sql
+
+server:
+  # ??????
+  port: 8080
+
+logging:
+  # ?? Spring JDBC ????? debug ??
+  level:
+    org.apache.coyote.http11.Http11InputBuffer: TRACE # Incoming HTTP requests
+    org.springframework.jdbc.datasource.init: DEBUG
+    org.springframework.jdbc.core: DEBUG # SQL
+    org.springframework.boot.autoconfigure.jdbc: DEBUG
