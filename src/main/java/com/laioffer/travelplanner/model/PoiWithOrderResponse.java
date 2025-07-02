@@ -13,8 +13,8 @@ public record PoiWithOrderResponse(
         double lng,
         BigDecimal rating,
         Integer userRatingsTotal,
-        JsonNode types,
+        String types,
         String photoReference,
-        JsonNode openingHours,
+        String openingHours,
         int visitOrder
 ) {}

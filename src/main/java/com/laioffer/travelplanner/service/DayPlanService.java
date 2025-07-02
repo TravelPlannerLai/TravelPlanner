@@ -1,5 +1,8 @@
 package com.laioffer.travelplanner.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.laioffer.travelplanner.entity.DayPlanEntity;
 import com.laioffer.travelplanner.entity.PoiEntity;
 import com.laioffer.travelplanner.entity.RouteEntity;
@@ -32,12 +35,13 @@ public class DayPlanService {
     }
 
     public void saveDayPlanWithRouteAndPois(UUID tripId, DayPlanSaveRequest request) {
+
         // Save DayPlan
         DayPlanEntity dayPlan = new DayPlanEntity(
-                UUID.randomUUID(),
+                null,
                 tripId,
                 request.dayNumber(),
-                request.date()
+                request.planDate()
         );
         dayPlan = dayPlanRepository.save(dayPlan);
 
@@ -50,7 +54,7 @@ public class DayPlanService {
                 savedPoi = existingPoi.get();
             } else {
                 savedPoi = new PoiEntity(
-                        UUID.randomUUID(),
+                        null,
                         poiReq.cityId(),
                         poiReq.placeId(),
                         poiReq.name(),
@@ -68,7 +72,7 @@ public class DayPlanService {
 
             // Save Route
             RouteEntity route = new RouteEntity(
-                    UUID.randomUUID(),
+                    null,
                     dayPlan.planId(),
                     savedPoi.poiId(),
                     poiReq.visitOrder()
@@ -102,14 +106,14 @@ public class DayPlanService {
                                 poi.photoReference(),
                                 poi.openingHours(),
                                 route.visitOrder()
-                                );
+                        );
                     })
                     .collect(Collectors.toList());
 
             result.add(new DayPlanWithRouteResponse(
                     plan.planId(),
                     plan.dayNumber(),
-                    plan.date(),
+                    plan.planDate(),
                     pois
             ));
         }
@@ -117,4 +121,3 @@ public class DayPlanService {
         return result;
     }
 }
-

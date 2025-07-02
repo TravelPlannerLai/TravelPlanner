@@ -1,6 +1,7 @@
 package com.laioffer.travelplanner.entity;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDate;
@@ -11,5 +12,6 @@ public record DayPlanEntity(
         @Id UUID planId,
         UUID tripId,
         int dayNumber,
-        LocalDate date
+        @Column("plandate")
+        LocalDate planDate
 ) {}

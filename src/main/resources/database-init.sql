@@ -40,10 +40,10 @@ CREATE TABLE IF NOT EXISTS pois
     place_id           TEXT UNIQUE      NOT NULL,
     name               TEXT             NOT NULL,
     formatted_address  TEXT             NOT NULL,
-    types              JSONB,
+    types              TEXT,
     lat                DOUBLE PRECISION NOT NULL,
     lng                DOUBLE PRECISION NOT NULL,
-    opening_hours      JSONB,
+    opening_hours      TEXT,
     rating             NUMERIC(2, 1),
     user_ratings_total INT,
     photo_reference    TEXT
@@ -63,8 +63,8 @@ CREATE TABLE IF NOT EXISTS trips
 CREATE TABLE IF NOT EXISTS day_plans
 (
     plan_id    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    trip_id    UUID REFERENCES trips (trip_id),
-    date       DATE NOT NULL,
+    trip_id    UUID NOT NULL REFERENCES trips (trip_id),
+    planDate       DATE NOT NULL,
     day_number INT  NOT NULL
 
 );
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS day_plans
 -- 7. poi_orders 表：某天要去的 POI 排序
 CREATE TABLE IF NOT EXISTS route
 (
-    id    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    route_id    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     plan_id     UUID NOT NULL REFERENCES day_plans (plan_id),
     poi_id      UUID NOT NULL REFERENCES pois (poi_id),
     visit_order INT  NOT NULL
@@ -152,11 +152,11 @@ VALUES ('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
         'ChIJV4FfHcUAhYARmj9VW2_yWrA',
         'Golden Gate Bridge',
         'Golden Gate Bridge, San Francisco, CA 94129, USA',
-        '[
+        '{
           "point_of_interest",
           "bridge",
           "landmark"
-        ]'::jsonb,
+        }',
         37.8199,
         -122.4783,
         '{
@@ -165,7 +165,7 @@ VALUES ('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
           "weekday_text": [
             "Open 24 hours"
           ]
-        }'::jsonb,
+        }',
         4.8,
         45000,
         'CnRtAAAATLZNl354RwP_...'),
@@ -174,11 +174,11 @@ VALUES ('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
         'ChIJddXQJIsAhYARsUBW5qZGqX0',
         'Alcatraz Island',
         'Alcatraz Island, San Francisco, CA 94133, USA',
-        '[
+        '{
           "point_of_interest",
           "establishment",
           "tourist_attraction"
-        ]'::jsonb,
+        }',
         37.8267,
         -122.4233,
         '{
@@ -187,21 +187,21 @@ VALUES ('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
           "weekday_text": [
             "Monday: 9:00 AM – 6:30 PM"
           ]
-        }'::jsonb,
+        }',
         4.7,
         32000,
         'CnRtAAAATLZNl354RwP_...')
 ON CONFLICT (poi_id) DO NOTHING;
-INSERT INTO day_plans (trip_id, date, day_number)
-VALUES ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', '2025-07-01', 1),
-       ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', '2025-07-02', 2),
-       ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', '2025-07-03', 3);
+INSERT INTO day_plans (plan_id, trip_id, planDate, day_number)
+VALUES ('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380a44','a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', '2025-07-01', 1),
+       ('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380a55','a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', '2025-07-02', 2),
+       ('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380a66','a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', '2025-07-03', 3);
 
 -- For European Adventure (16 days)
-INSERT INTO day_plans (plan_id,trip_id, date, day_number)
+INSERT INTO day_plans (plan_id,trip_id, planDate, day_number)
 VALUES ('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380a11','b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', '2025-08-15', 1),
        ('d2eebc99-9c0b-4ef8-bb6d-6bb9bd380a33','b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', '2025-08-16', 2);
-INSERT INTO route (id,plan_id, poi_id, visit_order)
+INSERT INTO route (route_id,plan_id, poi_id, visit_order)
 VALUES
     -- Day 1 itinerary
     ('f47ac10b-58cc-4372-a567-0e02b2c3d479','d1eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', 1), -- Eiffel Tower first

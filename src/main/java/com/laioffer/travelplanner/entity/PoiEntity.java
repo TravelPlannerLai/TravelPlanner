@@ -14,10 +14,10 @@ public record PoiEntity(
         String placeId,
         String name,
         String formattedAddress,
-        JsonNode types,
+        String types,
         double lat,
         double lng,
-        JsonNode openingHours,
+        String openingHours,
         BigDecimal rating,
         Integer userRatingsTotal,
         String photoReference

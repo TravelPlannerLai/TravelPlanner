@@ -1,6 +1,7 @@
 package com.laioffer.travelplanner.model;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.data.relational.core.mapping.Column;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -9,6 +10,7 @@ import java.util.UUID;
 
 public record DayPlanSaveRequest(
         int dayNumber,
-        LocalDate date,
+        @Column("plandate")
+        LocalDate planDate,
         List<PoiWithOrderRequest> pois
 ) {}
