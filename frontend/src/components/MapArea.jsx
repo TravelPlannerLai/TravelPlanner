@@ -255,7 +255,8 @@ const GoogleMapComponent = ({
   onAttractionClick,
   places,
   addPlace,
-  deletePlace
+  deletePlace,
+  updatePlaceName
 }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -320,8 +321,11 @@ const GoogleMapComponent = ({
           const infoWindow = new window.google.maps.InfoWindow({
             content: `
               <div>
-                <strong>${place.name}</strong><br/>
-                <span>${place.address}</span><br/>
+                <input id="edit-name-${idx}" value="${place.name.replace(/"/g, "&quot;")}" style="font-weight:bold;width:140px;margin-bottom:4px;padding:2px 4px;border:1px solid #ccc;border-radius:4px;" />
+                <div><strong>Address:</strong> ${place.address || place.formatted_address || ""}</div>
+                <div><strong>Types:</strong> ${Array.isArray(place.types) ? place.types.join(", ") : (place.types || "")}</div>
+                <div><strong>Rating:</strong> ${place.rating !== null && place.rating !== undefined ? place.rating : "N/A"}</div>
+                <div><strong>Opening Hours:</strong> ${place.opening_hours ? (place.opening_hours.open_now ? "Open Now" : "Closed") : "N/A"}</div>
                 <button id="delete-place-${idx}" style="margin-top:5px;color:#fff;background:#f87171;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;">Delete</button>
               </div>
             `,
@@ -337,6 +341,12 @@ const GoogleMapComponent = ({
                   infoWindow.close();
                 };
               }
+              const input = document.getElementById(`edit-name-${idx}`);
+              if (input) {
+                input.onchange = (e) => {
+                  updatePlaceName(idx, e.target.value);
+                };
+              }
             });
           });
           markersRef.current.push(marker);
@@ -344,27 +354,86 @@ const GoogleMapComponent = ({
       }
       
       map.addListener("click", (e) => {
-      const geocoder = new window.google.maps.Geocoder();
+      const service = new window.google.maps.places.PlacesService(map);
 
-      geocoder.geocode({ location: e.latLng }, (results, status) => {
-        if (status === "OK" && results[0]) {
-          const placeDetails = results[0];
-          addPlace({
-            name: placeDetails.formatted_address || "Unnamed Location",
-            address: placeDetails.formatted_address || "No address",
-            lat: e.latLng.lat(),
-            lng: e.latLng.lng(),
-          });
-        } else {
-          // fallback if geocoder fails
-          addPlace({
-            name: "Selected Location",
-            address: `Lat: ${e.latLng.lat().toFixed(6)}, Lng: ${e.latLng.lng().toFixed(6)}`,
-            lat: e.latLng.lat(),
-            lng: e.latLng.lng(),
-          });
+      // First, use nearbySearch to find the closest place to the click
+      service.nearbySearch(
+        {
+          location: e.latLng,
+          type: "point_of_interest", // or use "establishment" for more general places
+          radius: 50, // meters
+        },
+        (results, status) => {
+          if (
+            status === window.google.maps.places.PlacesServiceStatus.OK &&
+            results[0]
+          ) {
+            const placeSummary = results[0];
+            // Now get full details
+            service.getDetails(
+              {
+                placeId: placeSummary.place_id,
+                fields: [
+                  "place_id",
+                  "name",
+                  "formatted_address",
+                  "vicinity",
+                  "types",
+                  "geometry",
+                  "opening_hours",
+                  "rating",
+                  "user_ratings_total",
+                  "photos",
+                  "price_level",
+                ],
+              },
+              (details, status) => {
+                if (
+                  status === window.google.maps.places.PlacesServiceStatus.OK &&
+                  details
+                ) {
+                  addPlace({
+                    name: details.name,
+                    address: details.formatted_address || details.vicinity || "No address",
+                    lat: details.geometry.location.lat(),
+                    lng: details.geometry.location.lng(),
+                    place_id: details.place_id,
+                    types: details.types || [],
+                    price_level: details.price_level ?? null,
+                    rating: details.rating ?? null,
+                    user_ratings_total: details.user_ratings_total ?? null,
+                    opening_hours: details.opening_hours
+                      ? {
+                          open_now: details.opening_hours.open_now,
+                          weekday_text: details.opening_hours.weekday_text,
+                        }
+                      : null,
+                    photo_reference:
+                      details.photos && details.photos.length > 0
+                        ? details.photos[0].getUrl()
+                        : null,
+                  });
+                }
+              }
+            );
+          } else {
+            // fallback if no place found
+            addPlace({
+              name: "Selected Location",
+              address: `Lat: ${e.latLng.lat().toFixed(6)}, Lng: ${e.latLng.lng().toFixed(6)}`,
+              lat: e.latLng.lat(),
+              lng: e.latLng.lng(),
+              place_id: null,
+              types: [],
+              price_level: null,
+              rating: null,
+              user_ratings_total: null,
+              opening_hours: null,
+              photo_reference: null,
+            });
+          }
         }
-      });
+      );
     });
     };
 
@@ -380,7 +449,7 @@ const GoogleMapComponent = ({
       script.onload = initMap;
       document.head.appendChild(script);
     }
-  }, [currentCity, attractions, onAttractionClick, addPlace, places, deletePlace]);
+  }, [currentCity, attractions, onAttractionClick, addPlace, places, deletePlace,updatePlaceName]);
 
   return <div ref={mapRef} style={{ width: "100%", height: "100%" }} />;
 };
@@ -412,6 +481,14 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
     },
     []
   );
+
+  const updatePlaceName = React.useCallback((idx, newName) => {
+  setPlaces((prevPlaces) =>
+    prevPlaces.map((p, i) =>
+      i === idx ? { ...p, name: newName } : p
+    )
+  );
+}, []);
 
   const attractions = attractionsData[currentCity] || [];
 
@@ -454,6 +531,7 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
           places={places}
           addPlace={addPlace}
           deletePlace={deletePlace}
+          updatePlaceName={updatePlaceName}
         />
 
         {/* 调试信息 - 临时显示 */}
