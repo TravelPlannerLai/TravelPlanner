@@ -35,13 +35,13 @@ public class CityController {
         );
     }
 
-    @GetMapping("/getCityId/{name}")
-    public UUID getIdByName(@PathVariable("name") String name) {
-        if (cityRepository.findCityEntityByName(name).isPresent()) {
-            return cityRepository.findCityEntityByName(name).get().cityId();
-        }
-        return null;
-    }
+//    @GetMapping("/getCityId/{name}")
+//    public UUID getIdByName(@PathVariable("name") String name) {
+//        if (cityRepository.findCityEntityByName(name).isPresent()) {
+//            return cityRepository.findCityEntityByName(name).get().cityId();
+//        }
+//        return null;
+//    }
 
     @GetMapping("/name/{name}")
     public CityEntity getCityByName(@PathVariable("name") String name){

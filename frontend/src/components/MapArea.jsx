@@ -18,42 +18,42 @@ const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
 // 完整的城市坐标数据 - 包含美国所有主要城市
 const cityCoordinates = {
   // 热门国际城市
-  Paris: { lat: 48.8566, lng: 2.3522 },
-  London: { lat: 51.5074, lng: -0.1278 },
-  Tokyo: { lat: 35.6762, lng: 139.6503 },
-  Rome: { lat: 41.9028, lng: 12.4964 },
-  Barcelona: { lat: 41.3851, lng: 2.1734 },
+  Paris: { lat: 48.8566, lng: 2.3522, country: "France" },
+  London: { lat: 51.5074, lng: -0.1278, country: "UK" },
+  Tokyo: { lat: 35.6762, lng: 139.6503, country: "Japan" },
+  Rome: { lat: 41.9028, lng: 12.4964, country: "Italy" },
+  Barcelona: { lat: 41.3851, lng: 2.1734, country: "Spain" },
 
   // 美国主要城市
-  "New York": { lat: 40.7128, lng: -74.006 },
-  "New York City": { lat: 40.7128, lng: -74.006 },
-  "Los Angeles": { lat: 34.0522, lng: -118.2437 },
-  "San Francisco": { lat: 37.7749, lng: -122.4194 },
-  Chicago: { lat: 41.8781, lng: -87.6298 },
-  Miami: { lat: 25.7617, lng: -80.1918 },
-  Orlando: { lat: 28.5383, lng: -81.3792 },
-  "Las Vegas": { lat: 36.1699, lng: -115.1398 },
-  Seattle: { lat: 47.6062, lng: -122.3321 },
-  Boston: { lat: 42.3601, lng: -71.0589 },
-  Denver: { lat: 39.7392, lng: -104.9903 },
-  Austin: { lat: 30.2672, lng: -97.7431 },
-  Houston: { lat: 29.7604, lng: -95.3698 },
-  Dallas: { lat: 32.7767, lng: -96.797 },
-  Phoenix: { lat: 33.4484, lng: -112.074 },
-  Philadelphia: { lat: 39.9526, lng: -75.1652 },
-  "San Diego": { lat: 32.7157, lng: -117.1611 },
-  Atlanta: { lat: 33.749, lng: -84.388 },
-  Nashville: { lat: 36.1627, lng: -86.7816 },
-  Portland: { lat: 45.5152, lng: -122.6784 },
-  Tampa: { lat: 27.9506, lng: -82.4572 },
-  Charlotte: { lat: 35.2271, lng: -80.8431 },
-  Detroit: { lat: 42.3314, lng: -83.0458 },
-  Minneapolis: { lat: 44.9778, lng: -93.265 },
-  Columbus: { lat: 39.9612, lng: -82.9988 },
-  Indianapolis: { lat: 39.7684, lng: -86.1581 },
-  Cleveland: { lat: 41.4993, lng: -81.6944 },
-  Baltimore: { lat: 39.2904, lng: -76.6122 },
-  "Washington D.C.": { lat: 38.9072, lng: -77.0369 },
+  "New York": { lat: 40.7128, lng: -74.006 , country: "USA" },
+  "New York City": { lat: 40.7128, lng: -74.006, country: "USA" },
+  "Los Angeles": { lat: 34.0522, lng: -118.2437, country: "USA" },
+  "San Francisco": { lat: 37.7749, lng: -122.4194, country: "USA" },
+  Chicago: { lat: 41.8781, lng: -87.6298, country: "USA" },
+  Miami: { lat: 25.7617, lng: -80.1918, country: "USA" },
+  Orlando: { lat: 28.5383, lng: -81.3792, country: "USA" },
+  "Las Vegas": { lat: 36.1699, lng: -115.1398, country: "USA" },
+  Seattle: { lat: 47.6062, lng: -122.3321, country: "USA" },
+  Boston: { lat: 42.3601, lng: -71.0589, country: "USA" },
+  Denver: { lat: 39.7392, lng: -104.9903, country: "USA" },
+  Austin: { lat: 30.2672, lng: -97.7431, country: "USA" },
+  Houston: { lat: 29.7604, lng: -95.3698, country: "USA" },
+  Dallas: { lat: 32.7767, lng: -96.797, country: "USA" },
+  Phoenix: { lat: 33.4484, lng: -112.074, country: "USA" },
+  Philadelphia: { lat: 39.9526, lng: -75.1652, country: "USA" },
+  "San Diego": { lat: 32.7157, lng: -117.1611, country: "USA" },
+  Atlanta: { lat: 33.749, lng: -84.388, country: "USA" },
+  Nashville: { lat: 36.1627, lng: -86.7816, country: "USA" },
+  Portland: { lat: 45.5152, lng: -122.6784, country: "USA" },
+  Tampa: { lat: 27.9506, lng: -82.4572, country: "USA" },
+  Charlotte: { lat: 35.2271, lng: -80.8431, country: "USA" },
+  Detroit: { lat: 42.3314, lng: -83.0458, country: "USA" },
+  Minneapolis: { lat: 44.9778, lng: -93.265, country: "USA" },
+  Columbus: { lat: 39.9612, lng: -82.9988, country: "USA" },
+  Indianapolis: { lat: 39.7684, lng: -86.1581, country: "USA" },
+  Cleveland: { lat: 41.4993, lng: -81.6944, country: "USA" },
+  Baltimore: { lat: 39.2904, lng: -76.6122, country: "USA" },
+  "Washington D.C.": { lat: 38.9072, lng: -77.0369, country: "USA" },
 };
 
 // 景点数据 - 包含多个城市的真实景点
@@ -256,7 +256,8 @@ const GoogleMapComponent = ({
   places,
   addPlace,
   deletePlace,
-  updatePlaceName
+  updatePlaceName,
+  addCityToBackend
 }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -270,6 +271,12 @@ const GoogleMapComponent = ({
       const center =
         cityCoordinates[currentCity] || cityCoordinates["New York"];
       console.log(`Initializing map for ${currentCity}:`, center);
+      addCityToBackend({
+        name: currentCity,
+        country: center.country || "Unknown",
+        lat: center.lat,
+        lon: center.lng,
+      });
 
       const map = new window.google.maps.Map(mapRef.current, {
         zoom: 12,
@@ -449,7 +456,7 @@ const GoogleMapComponent = ({
       script.onload = initMap;
       document.head.appendChild(script);
     }
-  }, [currentCity, attractions, onAttractionClick, addPlace, places, deletePlace,updatePlaceName]);
+  }, [currentCity, attractions, onAttractionClick, addPlace, places, deletePlace,updatePlaceName,addCityToBackend]);
 
   return <div ref={mapRef} style={{ width: "100%", height: "100%" }} />;
 };
@@ -489,6 +496,28 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
     )
   );
 }, []);
+
+  const addCityToBackend = async (city) => {
+  try {
+    const response = await fetch('/api/city', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(city),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to add city');
+    }
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : {};
+    console.log('City added:', data);
+    return data;
+  } catch (error) {
+    console.error('Error adding city:', error);
+    return null;
+  }
+};
 
   const attractions = attractionsData[currentCity] || [];
 
@@ -532,6 +561,7 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
           addPlace={addPlace}
           deletePlace={deletePlace}
           updatePlaceName={updatePlaceName}
+          addCityToBackend={addCityToBackend}
         />
 
         {/* 调试信息 - 临时显示 */}

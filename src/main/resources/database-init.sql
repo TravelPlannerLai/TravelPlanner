@@ -98,9 +98,6 @@ VALUES
     -- New York, USA
     ('9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d', 'New York', 'USA', 40.7128, -74.0060),
 
-    -- London, UK
-    ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'London', 'UK', 51.5074, -0.1278),
-
     -- Sydney, Australia
     ('550e8400-e29b-41d4-a716-446655440000', 'Sydney', 'Australia', -33.8688, 151.2093),
 
