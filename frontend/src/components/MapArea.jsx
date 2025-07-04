@@ -267,7 +267,7 @@ const GoogleMapComponent = ({
   // 初始化地图
   useEffect(() => {
     const initMap = () => {
-      if (!window.google || !mapRef.current) return;
+      if (!window.google || !mapRef.current || !window.google.maps) return;
 
       const center =
         cityCoordinates[currentCity] || cityCoordinates["New York"];
@@ -362,6 +362,7 @@ const GoogleMapComponent = ({
       }
       
       map.addListener("click", (e) => {
+      if (!window.google || !mapRef.current || !window.google.maps) return;
       const service = new window.google.maps.places.PlacesService(map);
 
       // First, use nearbySearch to find the closest place to the click
