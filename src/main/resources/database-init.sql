@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS users
 CREATE TABLE IF NOT EXISTS cities
 (
     city_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name    TEXT NOT NULL,
+    name    TEXT NOT NULL UNIQUE,
     country TEXT NOT NULL,
     lat     DOUBLE PRECISION,
     lon     DOUBLE PRECISION
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS day_plans
 (
     plan_id    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     trip_id    UUID NOT NULL REFERENCES trips (trip_id),
-    planDate       DATE NOT NULL,
+    plan_date       DATE NOT NULL,
     day_number INT  NOT NULL
 
 );
@@ -192,13 +192,13 @@ VALUES ('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
         32000,
         'CnRtAAAATLZNl354RwP_...')
 ON CONFLICT (poi_id) DO NOTHING;
-INSERT INTO day_plans (plan_id, trip_id, planDate, day_number)
+INSERT INTO day_plans (plan_id, trip_id, plan_date, day_number)
 VALUES ('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380a44','a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', '2025-07-01', 1),
        ('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380a55','a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', '2025-07-02', 2),
        ('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380a66','a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', '2025-07-03', 3);
 
 -- For European Adventure (16 days)
-INSERT INTO day_plans (plan_id,trip_id, planDate, day_number)
+INSERT INTO day_plans (plan_id,trip_id, plan_date, day_number)
 VALUES ('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380a11','b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', '2025-08-15', 1),
        ('d2eebc99-9c0b-4ef8-bb6d-6bb9bd380a33','b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', '2025-08-16', 2);
 INSERT INTO route (route_id,plan_id, poi_id, visit_order)

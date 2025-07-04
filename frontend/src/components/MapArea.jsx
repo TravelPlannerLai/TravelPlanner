@@ -253,6 +253,9 @@ const GoogleMapComponent = ({
   currentCity,
   attractions,
   onAttractionClick,
+  places,
+  addPlace,
+  deletePlace
 }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -304,6 +307,65 @@ const GoogleMapComponent = ({
           markersRef.current.push(marker);
         });
       }
+      if (places && places.length > 0) {
+        places.forEach((place, idx) => {
+          const marker = new window.google.maps.Marker({
+            position: { lat: place.lat, lng: place.lng },
+            map: map,
+            title: place.name,
+            icon: {
+              url: "https://maps.google.com/mapfiles/ms/icons/red-dot.png", // or use a custom icon
+            },
+          });
+          const infoWindow = new window.google.maps.InfoWindow({
+            content: `
+              <div>
+                <strong>${place.name}</strong><br/>
+                <span>${place.address}</span><br/>
+                <button id="delete-place-${idx}" style="margin-top:5px;color:#fff;background:#f87171;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;">Delete</button>
+              </div>
+            `,
+          });
+          marker.addListener("click", () => {
+            infoWindow.open(map, marker);
+            // Attach delete handler after InfoWindow DOM is rendered
+            window.google.maps.event.addListenerOnce(infoWindow, "domready", () => {
+              const btn = document.getElementById(`delete-place-${idx}`);
+              if (btn) {
+                btn.onclick = () => {
+                  deletePlace(idx);
+                  infoWindow.close();
+                };
+              }
+            });
+          });
+          markersRef.current.push(marker);
+        });
+      }
+      
+      map.addListener("click", (e) => {
+      const geocoder = new window.google.maps.Geocoder();
+
+      geocoder.geocode({ location: e.latLng }, (results, status) => {
+        if (status === "OK" && results[0]) {
+          const placeDetails = results[0];
+          addPlace({
+            name: placeDetails.formatted_address || "Unnamed Location",
+            address: placeDetails.formatted_address || "No address",
+            lat: e.latLng.lat(),
+            lng: e.latLng.lng(),
+          });
+        } else {
+          // fallback if geocoder fails
+          addPlace({
+            name: "Selected Location",
+            address: `Lat: ${e.latLng.lat().toFixed(6)}, Lng: ${e.latLng.lng().toFixed(6)}`,
+            lat: e.latLng.lat(),
+            lng: e.latLng.lng(),
+          });
+        }
+      });
+    });
     };
 
     // 检查 Google Maps API 是否已加载
@@ -318,7 +380,7 @@ const GoogleMapComponent = ({
       script.onload = initMap;
       document.head.appendChild(script);
     }
-  }, [currentCity, attractions, onAttractionClick]);
+  }, [currentCity, attractions, onAttractionClick, addPlace, places, deletePlace]);
 
   return <div ref={mapRef} style={{ width: "100%", height: "100%" }} />;
 };
@@ -328,6 +390,28 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
   const [selectedAttraction, setSelectedAttraction] = useState(null);
   const [showAIAssistant, setShowAIAssistant] = useState(true);
   const [routeName, setRouteName] = useState("");
+  const [places, setPlaces] = useState([]);
+  // Wrap `addPlace` in useCallback
+  const addPlace = React.useCallback(
+    (place) => {
+      setPlaces((prevPlaces) => {
+        if (prevPlaces.length < 8) {
+          return [...prevPlaces, place];
+        } else {
+          alert("Maximum of 8 places allowed.");
+          return prevPlaces;
+        }
+      });
+    },
+    []
+  );
+
+  const deletePlace = React.useCallback(
+    (idx) => {
+      setPlaces((prevPlaces) => prevPlaces.filter((_, i) => i !== idx));
+    },
+    []
+  );
 
   const attractions = attractionsData[currentCity] || [];
 
@@ -367,6 +451,9 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
           currentCity={currentCity}
           attractions={attractions}
           onAttractionClick={setSelectedAttraction}
+          places={places}
+          addPlace={addPlace}
+          deletePlace={deletePlace}
         />
 
         {/* 调试信息 - 临时显示 */}

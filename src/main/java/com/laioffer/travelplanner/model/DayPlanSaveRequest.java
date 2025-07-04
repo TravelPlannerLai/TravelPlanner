@@ -10,7 +10,6 @@ import java.util.UUID;
 
 public record DayPlanSaveRequest(
         int dayNumber,
-        @Column("plandate")
         LocalDate planDate,
         List<PoiWithOrderRequest> pois
 ) {}
