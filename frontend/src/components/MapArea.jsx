@@ -257,7 +257,8 @@ const GoogleMapComponent = ({
   addPlace,
   deletePlace,
   updatePlaceName,
-  addCityToBackend
+  addCityToBackend,
+  addPOIToBackend
 }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -399,7 +400,7 @@ const GoogleMapComponent = ({
                   status === window.google.maps.places.PlacesServiceStatus.OK &&
                   details
                 ) {
-                  addPlace({
+                  const newPlace = {
                     name: details.name,
                     address: details.formatted_address || details.vicinity || "No address",
                     lat: details.geometry.location.lat(),
@@ -419,7 +420,10 @@ const GoogleMapComponent = ({
                       details.photos && details.photos.length > 0
                         ? details.photos[0].getUrl()
                         : null,
-                  });
+                  };
+
+                  addPlace(newPlace);
+                  addPOIToBackend(currentCity, newPlace);
                 }
               }
             );
@@ -456,7 +460,7 @@ const GoogleMapComponent = ({
       script.onload = initMap;
       document.head.appendChild(script);
     }
-  }, [currentCity, attractions, onAttractionClick, addPlace, places, deletePlace,updatePlaceName,addCityToBackend]);
+  }, [currentCity, attractions, onAttractionClick, addPlace, places, deletePlace,updatePlaceName,addCityToBackend,addPOIToBackend]);
 
   return <div ref={mapRef} style={{ width: "100%", height: "100%" }} />;
 };
@@ -495,7 +499,7 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
       i === idx ? { ...p, name: newName } : p
     )
   );
-}, []);
+  }, []);
 
   const addCityToBackend = async (city) => {
   try {
@@ -518,6 +522,37 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
     return null;
   }
 };
+
+  const addPOIToBackend = async (cityName, place) => {
+    try {
+      const response = await fetch(`/api/pois?cityName=${cityName}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          placeId: place.place_id,
+          name: place.name,
+          formattedAddress: place.address || place.formatted_address,
+          types: place.types, // Should be an array or JSON
+          lat: place.lat,
+          lng: place.lng,
+          openingHours: place.opening_hours, // Should be an object or JSON
+          rating: place.rating,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to add POI');
+      }
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
+      console.log('POI added:', data);
+      return data;
+    } catch (error) {
+      console.error('Error adding POI:', error);
+      return null;
+    }
+  };
 
   const attractions = attractionsData[currentCity] || [];
 
@@ -562,6 +597,7 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
           deletePlace={deletePlace}
           updatePlaceName={updatePlaceName}
           addCityToBackend={addCityToBackend}
+          addPOIToBackend={addPOIToBackend}
         />
 
         {/* 调试信息 - 临时显示 */}
