@@ -10,11 +10,7 @@ const Dashboard = () => {
   const [selectedDays, setSelectedDays] = useState("5days");
   const [currentCity, setCurrentCity] = useState("Paris");
   const [selectedRoute, setSelectedRoute] = useState(null);
-  const [savedRoutes, setSavedRoutes] = useState([
-    { id: 1, name: "Paris Romantic 3-Day Tour", days: 3, attractions: 8 },
-    { id: 2, name: "Paris Art & Culture Route", days: 5, attractions: 12 },
-    { id: 3, name: "Paris Food Adventure", days: 2, attractions: 6 },
-  ]);
+  const [savedRoutes, setSavedRoutes] = useState([]);
 
   const location = useLocation();
 
@@ -28,6 +24,15 @@ const Dashboard = () => {
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
+
+  useEffect(() => {
+    fetch("/api/trips", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        // 假设 data 是 trips 数组
+        setSavedRoutes(data);
+      });
+  }, []);
 
   // 明确定义切换函数
   const handleSidebarToggle = () => {
