@@ -11,201 +11,202 @@ import {
   Navigation,
   Info,
 } from "lucide-react";
+import Cookies from "js-cookie";
 
 // 使用你的 Google Maps API Key
 const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
 
 // 景点数据 - 包含多个城市的真实景点
-const attractionsData = {
-  Paris: [
-    {
-      id: 1,
-      name: "Eiffel Tower",
-      type: "landmark",
-      icon: "🗼",
-      coordinates: { lat: 48.8584, lng: 2.2945 },
-      rating: 4.8,
-      visitTime: "2-3 hours",
-      description: "Iconic iron lattice tower and symbol of Paris",
-      category: "Historical",
-    },
-    {
-      id: 2,
-      name: "Louvre Museum",
-      type: "museum",
-      icon: "🏛️",
-      coordinates: { lat: 48.8606, lng: 2.3376 },
-      rating: 4.9,
-      visitTime: "3-4 hours",
-      description: "World's largest art museum and historic monument",
-      category: "Art & Culture",
-    },
-    {
-      id: 3,
-      name: "Notre-Dame Cathedral",
-      type: "church",
-      icon: "⛪",
-      coordinates: { lat: 48.853, lng: 2.3499 },
-      rating: 4.7,
-      visitTime: "1-2 hours",
-      description: "Medieval Catholic cathedral with Gothic architecture",
-      category: "Historical",
-    },
-  ],
-  "New York": [
-    {
-      id: 4,
-      name: "Statue of Liberty",
-      type: "monument",
-      icon: "🗽",
-      coordinates: { lat: 40.6892, lng: -74.0445 },
-      rating: 4.7,
-      visitTime: "2-3 hours",
-      description: "Symbol of freedom and democracy",
-      category: "Historical",
-    },
-    {
-      id: 5,
-      name: "Central Park",
-      type: "park",
-      icon: "🌳",
-      coordinates: { lat: 40.7829, lng: -73.9654 },
-      rating: 4.6,
-      visitTime: "2-4 hours",
-      description: "Large public park in Manhattan",
-      category: "Nature",
-    },
-    {
-      id: 6,
-      name: "Times Square",
-      type: "landmark",
-      icon: "🌃",
-      coordinates: { lat: 40.758, lng: -73.9855 },
-      rating: 4.3,
-      visitTime: "1-2 hours",
-      description: "Busy commercial intersection and tourist destination",
-      category: "Entertainment",
-    },
-  ],
-  "New York City": [
-    {
-      id: 4,
-      name: "Statue of Liberty",
-      type: "monument",
-      icon: "🗽",
-      coordinates: { lat: 40.6892, lng: -74.0445 },
-      rating: 4.7,
-      visitTime: "2-3 hours",
-      description: "Symbol of freedom and democracy",
-      category: "Historical",
-    },
-    {
-      id: 5,
-      name: "Central Park",
-      type: "park",
-      icon: "🌳",
-      coordinates: { lat: 40.7829, lng: -73.9654 },
-      rating: 4.6,
-      visitTime: "2-4 hours",
-      description: "Large public park in Manhattan",
-      category: "Nature",
-    },
-    {
-      id: 6,
-      name: "Times Square",
-      type: "landmark",
-      icon: "🌃",
-      coordinates: { lat: 40.758, lng: -73.9855 },
-      rating: 4.3,
-      visitTime: "1-2 hours",
-      description: "Busy commercial intersection and tourist destination",
-      category: "Entertainment",
-    },
-  ],
-  Orlando: [
-    {
-      id: 7,
-      name: "Walt Disney World",
-      type: "theme_park",
-      icon: "🏰",
-      coordinates: { lat: 28.3852, lng: -81.5639 },
-      rating: 4.8,
-      visitTime: "Full day",
-      description: "The most magical place on earth",
-      category: "Entertainment",
-    },
-    {
-      id: 8,
-      name: "Universal Studios",
-      type: "theme_park",
-      icon: "🎬",
-      coordinates: { lat: 28.4743, lng: -81.4677 },
-      rating: 4.7,
-      visitTime: "Full day",
-      description: "Movie-themed amusement park",
-      category: "Entertainment",
-    },
-    {
-      id: 9,
-      name: "Lake Eola Park",
-      type: "park",
-      icon: "🦢",
-      coordinates: { lat: 28.5421, lng: -81.3737 },
-      rating: 4.5,
-      visitTime: "1-2 hours",
-      description: "Beautiful urban park with lake and swan boats",
-      category: "Nature",
-    },
-  ],
-  "Los Angeles": [
-    {
-      id: 10,
-      name: "Hollywood Sign",
-      type: "landmark",
-      icon: "🎭",
-      coordinates: { lat: 34.1341, lng: -118.3215 },
-      rating: 4.4,
-      visitTime: "1-2 hours",
-      description: "Iconic landmark overlooking Hollywood",
-      category: "Entertainment",
-    },
-    {
-      id: 11,
-      name: "Santa Monica Pier",
-      type: "pier",
-      icon: "🎡",
-      coordinates: { lat: 34.0082, lng: -118.4987 },
-      rating: 4.3,
-      visitTime: "2-3 hours",
-      description: "Famous pier with amusement park and beach",
-      category: "Entertainment",
-    },
-  ],
-  London: [
-    {
-      id: 12,
-      name: "Big Ben",
-      type: "landmark",
-      icon: "🕐",
-      coordinates: { lat: 51.4994, lng: -0.1245 },
-      rating: 4.7,
-      visitTime: "1 hour",
-      description: "Iconic clock tower of the Palace of Westminster",
-      category: "Historical",
-    },
-    {
-      id: 13,
-      name: "Tower Bridge",
-      type: "bridge",
-      icon: "🌉",
-      coordinates: { lat: 51.5055, lng: -0.0754 },
-      rating: 4.6,
-      visitTime: "1-2 hours",
-      description: "Famous bascule and suspension bridge",
-      category: "Historical",
-    },
-  ],
-};
+// const attractionsData = {
+//   Paris: [
+//     {
+//       id: 1,
+//       name: "Eiffel Tower",
+//       type: "landmark",
+//       icon: "🗼",
+//       coordinates: { lat: 48.8584, lng: 2.2945 },
+//       rating: 4.8,
+//       visitTime: "2-3 hours",
+//       description: "Iconic iron lattice tower and symbol of Paris",
+//       category: "Historical",
+//     },
+//     {
+//       id: 2,
+//       name: "Louvre Museum",
+//       type: "museum",
+//       icon: "🏛️",
+//       coordinates: { lat: 48.8606, lng: 2.3376 },
+//       rating: 4.9,
+//       visitTime: "3-4 hours",
+//       description: "World's largest art museum and historic monument",
+//       category: "Art & Culture",
+//     },
+//     {
+//       id: 3,
+//       name: "Notre-Dame Cathedral",
+//       type: "church",
+//       icon: "⛪",
+//       coordinates: { lat: 48.853, lng: 2.3499 },
+//       rating: 4.7,
+//       visitTime: "1-2 hours",
+//       description: "Medieval Catholic cathedral with Gothic architecture",
+//       category: "Historical",
+//     },
+//   ],
+//   "New York": [
+//     {
+//       id: 4,
+//       name: "Statue of Liberty",
+//       type: "monument",
+//       icon: "🗽",
+//       coordinates: { lat: 40.6892, lng: -74.0445 },
+//       rating: 4.7,
+//       visitTime: "2-3 hours",
+//       description: "Symbol of freedom and democracy",
+//       category: "Historical",
+//     },
+//     {
+//       id: 5,
+//       name: "Central Park",
+//       type: "park",
+//       icon: "🌳",
+//       coordinates: { lat: 40.7829, lng: -73.9654 },
+//       rating: 4.6,
+//       visitTime: "2-4 hours",
+//       description: "Large public park in Manhattan",
+//       category: "Nature",
+//     },
+//     {
+//       id: 6,
+//       name: "Times Square",
+//       type: "landmark",
+//       icon: "🌃",
+//       coordinates: { lat: 40.758, lng: -73.9855 },
+//       rating: 4.3,
+//       visitTime: "1-2 hours",
+//       description: "Busy commercial intersection and tourist destination",
+//       category: "Entertainment",
+//     },
+//   ],
+//   "New York City": [
+//     {
+//       id: 4,
+//       name: "Statue of Liberty",
+//       type: "monument",
+//       icon: "🗽",
+//       coordinates: { lat: 40.6892, lng: -74.0445 },
+//       rating: 4.7,
+//       visitTime: "2-3 hours",
+//       description: "Symbol of freedom and democracy",
+//       category: "Historical",
+//     },
+//     {
+//       id: 5,
+//       name: "Central Park",
+//       type: "park",
+//       icon: "🌳",
+//       coordinates: { lat: 40.7829, lng: -73.9654 },
+//       rating: 4.6,
+//       visitTime: "2-4 hours",
+//       description: "Large public park in Manhattan",
+//       category: "Nature",
+//     },
+//     {
+//       id: 6,
+//       name: "Times Square",
+//       type: "landmark",
+//       icon: "🌃",
+//       coordinates: { lat: 40.758, lng: -73.9855 },
+//       rating: 4.3,
+//       visitTime: "1-2 hours",
+//       description: "Busy commercial intersection and tourist destination",
+//       category: "Entertainment",
+//     },
+//   ],
+//   Orlando: [
+//     {
+//       id: 7,
+//       name: "Walt Disney World",
+//       type: "theme_park",
+//       icon: "🏰",
+//       coordinates: { lat: 28.3852, lng: -81.5639 },
+//       rating: 4.8,
+//       visitTime: "Full day",
+//       description: "The most magical place on earth",
+//       category: "Entertainment",
+//     },
+//     {
+//       id: 8,
+//       name: "Universal Studios",
+//       type: "theme_park",
+//       icon: "🎬",
+//       coordinates: { lat: 28.4743, lng: -81.4677 },
+//       rating: 4.7,
+//       visitTime: "Full day",
+//       description: "Movie-themed amusement park",
+//       category: "Entertainment",
+//     },
+//     {
+//       id: 9,
+//       name: "Lake Eola Park",
+//       type: "park",
+//       icon: "🦢",
+//       coordinates: { lat: 28.5421, lng: -81.3737 },
+//       rating: 4.5,
+//       visitTime: "1-2 hours",
+//       description: "Beautiful urban park with lake and swan boats",
+//       category: "Nature",
+//     },
+//   ],
+//   "Los Angeles": [
+//     {
+//       id: 10,
+//       name: "Hollywood Sign",
+//       type: "landmark",
+//       icon: "🎭",
+//       coordinates: { lat: 34.1341, lng: -118.3215 },
+//       rating: 4.4,
+//       visitTime: "1-2 hours",
+//       description: "Iconic landmark overlooking Hollywood",
+//       category: "Entertainment",
+//     },
+//     {
+//       id: 11,
+//       name: "Santa Monica Pier",
+//       type: "pier",
+//       icon: "🎡",
+//       coordinates: { lat: 34.0082, lng: -118.4987 },
+//       rating: 4.3,
+//       visitTime: "2-3 hours",
+//       description: "Famous pier with amusement park and beach",
+//       category: "Entertainment",
+//     },
+//   ],
+//   London: [
+//     {
+//       id: 12,
+//       name: "Big Ben",
+//       type: "landmark",
+//       icon: "🕐",
+//       coordinates: { lat: 51.4994, lng: -0.1245 },
+//       rating: 4.7,
+//       visitTime: "1 hour",
+//       description: "Iconic clock tower of the Palace of Westminster",
+//       category: "Historical",
+//     },
+//     {
+//       id: 13,
+//       name: "Tower Bridge",
+//       type: "bridge",
+//       icon: "🌉",
+//       coordinates: { lat: 51.5055, lng: -0.0754 },
+//       rating: 4.6,
+//       visitTime: "1-2 hours",
+//       description: "Famous bascule and suspension bridge",
+//       category: "Historical",
+//     },
+//   ],
+// };
 
 export async function fetchCityCoordinates(cityName, apiKey) {
   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(cityName)}&key=${apiKey}`;
@@ -426,29 +427,56 @@ const GoogleMapComponent = ({
                           ? details.photos[0].getUrl()
                           : null,
                     };
+                  // Show detailed info in confirm
+              const confirmMsg = `
+              Add this place to your route?
 
-                    addPlace(newPlace);
-                    addPOIToBackend(currentCity, newPlace);
+              Name: ${newPlace.name}
+              Address: ${newPlace.address}
+              Types: ${Array.isArray(newPlace.types) ? newPlace.types.join(", ") : ""}
+              Rating: ${newPlace.rating ?? "N/A"}
+              Open Now: ${
+                              newPlace.opening_hours
+                                ? newPlace.opening_hours.open_now
+                                  ? "Yes"
+                                  : "No"
+                                : "N/A"
+                            }
+                          `.trim();
+
+                    // Add confirmation before adding
+              if (window.confirm(confirmMsg)) {
+                addPlace(newPlace);
+                addPOIToBackend(currentCity, newPlace);
+              }
                   }
                 }
               );
             } else {
               // fallback if no place found
-              addPlace({
-                name: "Selected Location",
-                address: `Lat: ${e.latLng.lat().toFixed(6)}, Lng: ${e.latLng
-                  .lng()
-                  .toFixed(6)}`,
-                lat: e.latLng.lat(),
-                lng: e.latLng.lng(),
-                place_id: null,
-                types: [],
-                price_level: null,
-                rating: null,
-                user_ratings_total: null,
-                opening_hours: null,
-                photo_reference: null,
-              });
+        const fallbackPlace = {
+          name: "Selected Location",
+          address: `Lat: ${e.latLng.lat().toFixed(6)}, Lng: ${e.latLng
+            .lng()
+            .toFixed(6)}`,
+          lat: e.latLng.lat(),
+          lng: e.latLng.lng(),
+          place_id: null,
+          types: [],
+          price_level: null,
+          rating: null,
+          user_ratings_total: null,
+          opening_hours: null,
+          photo_reference: null,
+        };
+        const confirmMsg = `
+        Add this location to your route?
+
+        ${fallbackPlace.address}
+                `.trim();
+        if (window.confirm(confirmMsg)) {
+          addPlace(fallbackPlace);
+        }
             }
           }
         );
@@ -489,14 +517,23 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
   const [showAIAssistant, setShowAIAssistant] = useState(true);
   const [routeName, setRouteName] = useState("");
   const [currentDay, setCurrentDay] = useState(1);
-  const [placesByDay, setPlacesByDay] = useState({ 1: [] });
+  const [placesByDay, setPlacesByDay] = useState(() => {
+    const saved = Cookies.get("placesByDay");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return { 1: [] };
+      }
+    }
+    return { 1: [] };
+  });
 
   const handleDayChange = (e) => {
     setCurrentDay(Number(e.target.value));
     setSelectedAttraction(null);
   };
 
-  const [places, setPlaces] = useState([]);
   const [cityCoordinates, setCityCoordinates] = useState({});
 
   useEffect(() => {
@@ -515,6 +552,11 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
     }
     getCoordinates();
   }, [currentCity, cityCoordinates]);
+
+  // 1. Save placesByDay to cookies whenever it changes
+  useEffect(() => {
+    Cookies.set("placesByDay", JSON.stringify(placesByDay), { expires: 7 });
+  }, [placesByDay]);
 
   // Wrap `addPlace` in useCallback
   const addPlace = React.useCallback(
@@ -621,6 +663,7 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
     const daysWithPins = Object.entries(placesByDay).filter(
       ([day, pins]) => pins && pins.length > 0
     );
+    console.log("Days with pins:", daysWithPins);
     if (daysWithPins.length === 0) {
       alert("请至少在一天放置一个景点后再保存路线！");
       return;
@@ -678,9 +721,9 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
       planDateObj.setDate(planDateObj.getDate() + (dayNumber - 1));
       const planDate = planDateObj.toISOString().slice(0, 10);
       // 组装 pois
-      const pois = pins.map((p, idx) => ({
+      const pois = pins.filter(p => p.place_id || p.placeId).map((p, idx) => ({
         cityId,
-        placeId: p.place_id || p.placeId || null,
+        placeId: p.place_id || p.placeId,
         name: p.name,
         formattedAddress: p.address || p.formattedAddress || "",
         types: p.types || [],
