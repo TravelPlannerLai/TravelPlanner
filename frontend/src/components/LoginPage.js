@@ -27,8 +27,9 @@ const LoginPage = () => {
       });
 
       if (response.ok) {
-        // 3. 登录成功跳转
+        // 登录成功
         alert("登录成功！");
+        localStorage.setItem("userToken", "true");
         navigate("/select_city");
       } else {
         // 4. 登录失败提示

@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
@@ -22,6 +22,10 @@ const Sidebar = ({
   selectedRoute,
 }) => {
   const navigate = useNavigate();
+
+  // 判断是否登录（可根据你的实际登录逻辑调整）
+  const isLoggedIn =
+    !!localStorage.getItem("userToken") || !!localStorage.getItem("userData");
 
   // 添加调试用的点击处理函数
   const handleToggleClick = (e) => {
@@ -173,31 +177,47 @@ const Sidebar = ({
               Saved Routes
             </h4>
             <div className="space-y-2 max-h-60 overflow-y-auto">
-              {savedRoutes.map((route) => (
-                <div
-                  key={route.id}
-                  onClick={() => onRouteSelect(route)}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
-                    selectedRoute?.id === route.id
-                      ? "border-blue-300 bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  <h5 className="font-medium text-gray-800 text-sm mb-1">
-                    {route.name}
-                  </h5>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <div className="flex items-center">
-                      <Clock size={12} className="mr-1" />
-                      {route.days} days
+              {isLoggedIn ? (
+                savedRoutes.length > 0 ? (
+                  savedRoutes.map((route) => (
+                    <div
+                      key={route.id}
+                      onClick={() => onRouteSelect(route)}
+                      className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                        selectedRoute?.id === route.id
+                          ? "border-blue-300 bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <h5 className="font-medium text-gray-800 text-sm mb-1">
+                        {route.name}
+                      </h5>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <div className="flex items-center">
+                          <Clock size={12} className="mr-1" />
+                          {route.days} days
+                        </div>
+                        <div className="flex items-center">
+                          <MapPin size={12} className="mr-1" />
+                          {route.attractions} spots
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                      <MapPin size={12} className="mr-1" />
-                      {route.attractions} spots
-                    </div>
+                  ))
+                ) : (
+                  <div className="text-gray-400 text-sm">
+                    No saved routes yet.
                   </div>
+                )
+              ) : (
+                <div className="text-gray-400 text-sm">
+                  Please{" "}
+                  <Link to="/login" className="text-blue-500 underline">
+                    log in
+                  </Link>{" "}
+                  to save your routes
                 </div>
-              ))}
+              )}
             </div>
           </div>
         )}

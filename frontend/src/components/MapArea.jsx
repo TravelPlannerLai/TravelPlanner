@@ -15,47 +15,6 @@ import {
 // 使用你的 Google Maps API Key
 const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
 
-// 完整的城市坐标数据 - 包含美国所有主要城市
-// const cityCoordinates = {
-//   // 热门国际城市
-//   Paris: { lat: 48.8566, lng: 2.3522, country: "France" },
-//   London: { lat: 51.5074, lng: -0.1278, country: "UK" },
-//   Tokyo: { lat: 35.6762, lng: 139.6503, country: "Japan" },
-//   Rome: { lat: 41.9028, lng: 12.4964, country: "Italy" },
-//   Barcelona: { lat: 41.3851, lng: 2.1734, country: "Spain" },
-
-//   // 美国主要城市
-//   "New York": { lat: 40.7128, lng: -74.006 , country: "USA" },
-//   "New York City": { lat: 40.7128, lng: -74.006, country: "USA" },
-//   "Los Angeles": { lat: 34.0522, lng: -118.2437, country: "USA" },
-//   "San Francisco": { lat: 37.7749, lng: -122.4194, country: "USA" },
-//   Chicago: { lat: 41.8781, lng: -87.6298, country: "USA" },
-//   Miami: { lat: 25.7617, lng: -80.1918, country: "USA" },
-//   Orlando: { lat: 28.5383, lng: -81.3792, country: "USA" },
-//   "Las Vegas": { lat: 36.1699, lng: -115.1398, country: "USA" },
-//   Seattle: { lat: 47.6062, lng: -122.3321, country: "USA" },
-//   Boston: { lat: 42.3601, lng: -71.0589, country: "USA" },
-//   Denver: { lat: 39.7392, lng: -104.9903, country: "USA" },
-//   Austin: { lat: 30.2672, lng: -97.7431, country: "USA" },
-//   Houston: { lat: 29.7604, lng: -95.3698, country: "USA" },
-//   Dallas: { lat: 32.7767, lng: -96.797, country: "USA" },
-//   Phoenix: { lat: 33.4484, lng: -112.074, country: "USA" },
-//   Philadelphia: { lat: 39.9526, lng: -75.1652, country: "USA" },
-//   "San Diego": { lat: 32.7157, lng: -117.1611, country: "USA" },
-//   Atlanta: { lat: 33.749, lng: -84.388, country: "USA" },
-//   Nashville: { lat: 36.1627, lng: -86.7816, country: "USA" },
-//   Portland: { lat: 45.5152, lng: -122.6784, country: "USA" },
-//   Tampa: { lat: 27.9506, lng: -82.4572, country: "USA" },
-//   Charlotte: { lat: 35.2271, lng: -80.8431, country: "USA" },
-//   Detroit: { lat: 42.3314, lng: -83.0458, country: "USA" },
-//   Minneapolis: { lat: 44.9778, lng: -93.265, country: "USA" },
-//   Columbus: { lat: 39.9612, lng: -82.9988, country: "USA" },
-//   Indianapolis: { lat: 39.7684, lng: -86.1581, country: "USA" },
-//   Cleveland: { lat: 41.4993, lng: -81.6944, country: "USA" },
-//   Baltimore: { lat: 39.2904, lng: -76.6122, country: "USA" },
-//   "Washington D.C.": { lat: 38.9072, lng: -77.0369, country: "USA" },
-// };
-
 // 景点数据 - 包含多个城市的真实景点
 const attractionsData = {
   Paris: [
@@ -347,11 +306,30 @@ const GoogleMapComponent = ({
           const infoWindow = new window.google.maps.InfoWindow({
             content: `
               <div>
-                <input id="edit-name-${idx}" value="${place.name.replace(/"/g, "&quot;")}" style="font-weight:bold;width:140px;margin-bottom:4px;padding:2px 4px;border:1px solid #ccc;border-radius:4px;" />
-                <div><strong>Address:</strong> ${place.address || place.formatted_address || ""}</div>
-                <div><strong>Types:</strong> ${Array.isArray(place.types) ? place.types.join(", ") : (place.types || "")}</div>
-                <div><strong>Rating:</strong> ${place.rating !== null && place.rating !== undefined ? place.rating : "N/A"}</div>
-                <div><strong>Opening Hours:</strong> ${place.opening_hours ? (place.opening_hours.open_now ? "Open Now" : "Closed") : "N/A"}</div>
+                <input id="edit-name-${idx}" value="${place.name.replace(
+              /"/g,
+              "&quot;"
+            )}" style="font-weight:bold;width:140px;margin-bottom:4px;padding:2px 4px;border:1px solid #ccc;border-radius:4px;" />
+                <div><strong>Address:</strong> ${
+                  place.address || place.formatted_address || ""
+                }</div>
+                <div><strong>Types:</strong> ${
+                  Array.isArray(place.types)
+                    ? place.types.join(", ")
+                    : place.types || ""
+                }</div>
+                <div><strong>Rating:</strong> ${
+                  place.rating !== null && place.rating !== undefined
+                    ? place.rating
+                    : "N/A"
+                }</div>
+                <div><strong>Opening Hours:</strong> ${
+                  place.opening_hours
+                    ? place.opening_hours.open_now
+                      ? "Open Now"
+                      : "Closed"
+                    : "N/A"
+                }</div>
                 <button id="delete-place-${idx}" style="margin-top:5px;color:#fff;background:#f87171;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;">Delete</button>
               </div>
             `,
@@ -359,112 +337,122 @@ const GoogleMapComponent = ({
           marker.addListener("click", () => {
             infoWindow.open(map, marker);
             // Attach delete handler after InfoWindow DOM is rendered
-            window.google.maps.event.addListenerOnce(infoWindow, "domready", () => {
-              const btn = document.getElementById(`delete-place-${idx}`);
-              if (btn) {
-                btn.onclick = () => {
-                  deletePlace(idx);
-                  infoWindow.close();
-                };
+            window.google.maps.event.addListenerOnce(
+              infoWindow,
+              "domready",
+              () => {
+                const btn = document.getElementById(`delete-place-${idx}`);
+                if (btn) {
+                  btn.onclick = () => {
+                    deletePlace(idx);
+                    infoWindow.close();
+                  };
+                }
+                const input = document.getElementById(`edit-name-${idx}`);
+                if (input) {
+                  input.onchange = (e) => {
+                    updatePlaceName(idx, e.target.value);
+                  };
+                }
               }
-              const input = document.getElementById(`edit-name-${idx}`);
-              if (input) {
-                input.onchange = (e) => {
-                  updatePlaceName(idx, e.target.value);
-                };
-              }
-            });
+            );
           });
           markersRef.current.push(marker);
         });
       }
-      
+
       map.addListener("click", (e) => {
-      if (!window.google || !mapRef.current || !window.google.maps) return;
-      const service = new window.google.maps.places.PlacesService(map);
+        if (!window.google || !mapRef.current || !window.google.maps) return;
+        const service = new window.google.maps.places.PlacesService(map);
 
-      // First, use nearbySearch to find the closest place to the click
-      service.nearbySearch(
-        {
-          location: e.latLng,
-          type: "point_of_interest", // or use "establishment" for more general places
-          radius: 50, // meters
-        },
-        (results, status) => {
-          if (
-            status === window.google.maps.places.PlacesServiceStatus.OK &&
-            results[0]
-          ) {
-            const placeSummary = results[0];
-            // Now get full details
-            service.getDetails(
-              {
-                placeId: placeSummary.place_id,
-                fields: [
-                  "place_id",
-                  "name",
-                  "formatted_address",
-                  "vicinity",
-                  "types",
-                  "geometry",
-                  "opening_hours",
-                  "rating",
-                  "user_ratings_total",
-                  "photos",
-                  "price_level",
-                ],
-              },
-              (details, status) => {
-                if (
-                  status === window.google.maps.places.PlacesServiceStatus.OK &&
-                  details
-                ) {
-                  const newPlace = {
-                    name: details.name,
-                    address: details.formatted_address || details.vicinity || "No address",
-                    lat: details.geometry.location.lat(),
-                    lng: details.geometry.location.lng(),
-                    place_id: details.place_id,
-                    types: details.types || [],
-                    price_level: details.price_level ?? null,
-                    rating: details.rating ?? null,
-                    user_ratings_total: details.user_ratings_total ?? null,
-                    opening_hours: details.opening_hours
-                      ? {
-                          open_now: details.opening_hours.open_now,
-                          weekday_text: details.opening_hours.weekday_text,
-                        }
-                      : null,
-                    photo_reference:
-                      details.photos && details.photos.length > 0
-                        ? details.photos[0].getUrl()
+        // First, use nearbySearch to find the closest place to the click
+        service.nearbySearch(
+          {
+            location: e.latLng,
+            type: "point_of_interest", // or use "establishment" for more general places
+            radius: 50, // meters
+          },
+          (results, status) => {
+            if (
+              status === window.google.maps.places.PlacesServiceStatus.OK &&
+              results[0]
+            ) {
+              const placeSummary = results[0];
+              // Now get full details
+              service.getDetails(
+                {
+                  placeId: placeSummary.place_id,
+                  fields: [
+                    "place_id",
+                    "name",
+                    "formatted_address",
+                    "vicinity",
+                    "types",
+                    "geometry",
+                    "opening_hours",
+                    "rating",
+                    "user_ratings_total",
+                    "photos",
+                    "price_level",
+                  ],
+                },
+                (details, status) => {
+                  if (
+                    status ===
+                      window.google.maps.places.PlacesServiceStatus.OK &&
+                    details
+                  ) {
+                    const newPlace = {
+                      name: details.name,
+                      address:
+                        details.formatted_address ||
+                        details.vicinity ||
+                        "No address",
+                      lat: details.geometry.location.lat(),
+                      lng: details.geometry.location.lng(),
+                      place_id: details.place_id,
+                      types: details.types || [],
+                      price_level: details.price_level ?? null,
+                      rating: details.rating ?? null,
+                      user_ratings_total: details.user_ratings_total ?? null,
+                      opening_hours: details.opening_hours
+                        ? {
+                            open_now: details.opening_hours.open_now,
+                            weekday_text: details.opening_hours.weekday_text,
+                          }
                         : null,
-                  };
+                      photo_reference:
+                        details.photos && details.photos.length > 0
+                          ? details.photos[0].getUrl()
+                          : null,
+                    };
 
-                  addPlace(newPlace);
-                  addPOIToBackend(currentCity, newPlace);
+                    addPlace(newPlace);
+                    addPOIToBackend(currentCity, newPlace);
+                  }
                 }
-              }
-            );
-          } else {
-            // fallback if no place found
-            addPlace({
-              name: "Selected Location",
-              address: `Lat: ${e.latLng.lat().toFixed(6)}, Lng: ${e.latLng.lng().toFixed(6)}`,
-              lat: e.latLng.lat(),
-              lng: e.latLng.lng(),
-              place_id: null,
-              types: [],
-              price_level: null,
-              rating: null,
-              user_ratings_total: null,
-              opening_hours: null,
-              photo_reference: null,
-            });
+              );
+            } else {
+              // fallback if no place found
+              addPlace({
+                name: "Selected Location",
+                address: `Lat: ${e.latLng.lat().toFixed(6)}, Lng: ${e.latLng
+                  .lng()
+                  .toFixed(6)}`,
+                lat: e.latLng.lat(),
+                lng: e.latLng.lng(),
+                place_id: null,
+                types: [],
+                price_level: null,
+                rating: null,
+                user_ratings_total: null,
+                opening_hours: null,
+                photo_reference: null,
+              });
+            }
           }
-        }
-      );
-    });
+        );
+      });
     };
 
     // 检查 Google Maps API 是否已加载
@@ -479,7 +467,18 @@ const GoogleMapComponent = ({
       script.onload = initMap;
       document.head.appendChild(script);
     }
-  }, [currentCity, attractions, onAttractionClick, addPlace, places, deletePlace,updatePlaceName,addCityToBackend,addPOIToBackend, cityCoordinates]);
+  }, [
+    currentCity,
+    attractions,
+    onAttractionClick,
+    addPlace,
+    places,
+    deletePlace,
+    updatePlaceName,
+    addCityToBackend,
+    addPOIToBackend,
+    cityCoordinates,
+  ]);
 
   return <div ref={mapRef} style={{ width: "100%", height: "100%" }} />;
 };
@@ -489,6 +488,14 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
   const [selectedAttraction, setSelectedAttraction] = useState(null);
   const [showAIAssistant, setShowAIAssistant] = useState(true);
   const [routeName, setRouteName] = useState("");
+  const [currentDay, setCurrentDay] = useState(1);
+  const [placesByDay, setPlacesByDay] = useState({ 1: [] });
+
+  const handleDayChange = (e) => {
+    setCurrentDay(Number(e.target.value));
+    setSelectedAttraction(null);
+  };
+
   const [places, setPlaces] = useState([]);
   const [cityCoordinates, setCityCoordinates] = useState({});
 
@@ -512,65 +519,76 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
   // Wrap `addPlace` in useCallback
   const addPlace = React.useCallback(
     (place) => {
-      setPlaces((prevPlaces) => {
-        if (prevPlaces.length < 8) {
-          return [...prevPlaces, place];
+      setPlacesByDay((prev) => {
+        const dayPlaces = prev[currentDay] || [];
+        if (dayPlaces.length < 8) {
+          return { ...prev, [currentDay]: [...dayPlaces, place] };
         } else {
-          alert("Maximum of 8 places allowed.");
-          return prevPlaces;
+          alert("Maximum of 8 places allowed per day.");
+          return prev;
         }
       });
     },
-    []
+    [currentDay]
   );
 
   const deletePlace = React.useCallback(
     (idx) => {
-      setPlaces((prevPlaces) => prevPlaces.filter((_, i) => i !== idx));
+      setPlacesByDay((prev) => {
+        const dayPlaces = prev[currentDay] || [];
+        return { ...prev, [currentDay]: dayPlaces.filter((_, i) => i !== idx) };
+      });
     },
-    []
+    [currentDay]
   );
 
-  const updatePlaceName = React.useCallback((idx, newName) => {
-  setPlaces((prevPlaces) =>
-    prevPlaces.map((p, i) =>
-      i === idx ? { ...p, name: newName } : p
-    )
+  const updatePlaceName = React.useCallback(
+    (idx, newName) => {
+      setPlacesByDay((prev) => {
+        const dayPlaces = prev[currentDay] || [];
+        return {
+          ...prev,
+          [currentDay]: dayPlaces.map((p, i) =>
+            i === idx ? { ...p, name: newName } : p
+          ),
+        };
+      });
+    },
+    [currentDay]
   );
-  }, []);
 
   const addCityToBackend = async (city) => {
-  try {
-    const response = await fetch('/api/city', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(city),
-    });
-    if (response.status === 409) {
-      console.warn('City already exists');
-      return;
+    try {
+      const response = await fetch("/api/city", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(city),
+      });
+      if (response.status === 409) {
+        console.warn('City already exists');
+        return;
+      }
+      if (!response.ok) {
+        throw new Error("Failed to add city");
+      }
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
+      console.log("City added:", data);
+      return data;
+    } catch (error) {
+      console.error("Error adding city:", error);
+      return null;
     }
-    if (!response.ok) {
-      throw new Error('Failed to add city');
-    }
-    const text = await response.text();
-    const data = text ? JSON.parse(text) : {};
-    console.log('City added:', data);
-    return data;
-  } catch (error) {
-    console.error('Error adding city:', error);
-    return null;
-  }
-};
+  };
 
   const addPOIToBackend = async (cityName, place) => {
     try {
       const response = await fetch(`/api/pois?cityName=${cityName}`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           placeId: place.place_id,
@@ -584,30 +602,121 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
         }),
       });
       if (!response.ok) {
-        throw new Error('Failed to add POI');
+        throw new Error("Failed to add POI");
       }
       const text = await response.text();
       const data = text ? JSON.parse(text) : {};
-      console.log('POI added:', data);
+      console.log("POI added:", data);
       return data;
     } catch (error) {
-      console.error('Error adding POI:', error);
+      console.error("Error adding POI:", error);
       return null;
     }
   };
 
-  const attractions = attractionsData[currentCity] || [];
+  const attractions = placesByDay[currentDay] || [];
 
-  const handleSaveCurrentRoute = () => {
-    if (routeName.trim()) {
-      onSaveRoute({
-        name: routeName,
-        days: parseInt(selectedDays),
-        attractions: attractions.length,
-      });
-      setRouteName("");
-      alert("Route saved successfully!");
+  const handleSaveCurrentRoute = async () => {
+    // 统计有图钉的天数和天号
+    const daysWithPins = Object.entries(placesByDay).filter(
+      ([day, pins]) => pins && pins.length > 0
+    );
+    if (daysWithPins.length === 0) {
+      alert("请至少在一天放置一个景点后再保存路线！");
+      return;
     }
+    // 获取 cityId
+    let cityId = null;
+    let cityQueryName = currentCity;
+    if (cityQueryName === "New York City") cityQueryName = "New York";
+    try {
+      const cityRes = await fetch(
+        `/api/city/name/${encodeURIComponent(cityQueryName)}`
+      );
+      if (cityRes.ok) {
+        const cityData = await cityRes.json();
+        cityId = cityData.cityId || cityData.city_id || cityData.id;
+      }
+    } catch (e) {
+      alert("获取城市ID失败");
+      return;
+    }
+    if (!cityId) {
+      alert("未找到当前城市的ID，无法保存");
+      return;
+    }
+    // 创建 trip
+    const startDate = new Date().toISOString().slice(0, 10); // yyyy-mm-dd
+    const days = daysWithPins.length;
+    let tripId = null;
+    try {
+      const tripRes = await fetch("/api/trips", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ cityId, startDate, days }),
+      });
+      if (tripRes.ok) {
+        tripId = await tripRes.text();
+        // 可能是 uuid 字符串
+        if (tripId.startsWith('"') && tripId.endsWith('"'))
+          tripId = tripId.slice(1, -1);
+      }
+    } catch (e) {
+      alert("创建行程(trip)失败");
+      return;
+    }
+    if (!tripId) {
+      alert("未能成功创建行程(trip)");
+      return;
+    }
+    // 依次为每个有图钉的 day 创建 day plan
+    for (const [dayStr, pins] of daysWithPins) {
+      const dayNumber = Number(dayStr);
+      // 计算 plan_date = start_date + (day_number-1)
+      const planDateObj = new Date(startDate);
+      planDateObj.setDate(planDateObj.getDate() + (dayNumber - 1));
+      const planDate = planDateObj.toISOString().slice(0, 10);
+      // 组装 pois
+      const pois = pins.map((p, idx) => ({
+        cityId,
+        placeId: p.place_id || p.placeId || null,
+        name: p.name,
+        formattedAddress: p.address || p.formattedAddress || "",
+        types: p.types || [],
+        lat: p.lat,
+        lng: p.lng,
+        openingHours: p.opening_hours || p.openingHours || null,
+        rating: p.rating || null,
+        userRatingsTotal: p.user_ratings_total || p.userRatingsTotal || null,
+        photoReference: p.photo_reference || p.photoReference || null,
+        visitOrder: idx + 1,
+      }));
+      const dayPlanReq = {
+        dayNumber,
+        planDate,
+        pois,
+      };
+      try {
+        const planRes = await fetch(
+          `/api/dayPlans/save_route?tripId=${tripId}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(dayPlanReq),
+          }
+        );
+        if (!planRes.ok) {
+          throw new Error("保存 day plan 失败");
+        }
+      } catch (e) {
+        alert(`保存第${dayNumber}天路线失败`);
+        return;
+      }
+    }
+    alert("路线已成功保存到数据库！");
+    // 可选：清空本地数据或刷新 saved routes
   };
 
   // API Key 检查
@@ -627,14 +736,14 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
   }
 
   return (
-    <div className="flex-1 relative bg-gray-100">
+    <div style={{ width: "100%", height: "100%", position: "relative" }}>
       {/* Google Maps 容器 */}
       <div className="w-full h-full relative">
         <GoogleMapComponent
           currentCity={currentCity}
           attractions={attractions}
           onAttractionClick={setSelectedAttraction}
-          places={places}
+          places={placesByDay[currentDay] || []}
           addPlace={addPlace}
           deletePlace={deletePlace}
           updatePlaceName={updatePlaceName}
@@ -738,18 +847,25 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
             <MapPin className="mr-2 text-blue-600" size={20} />
             Route Planner
           </h3>
-
+          <div className="mb-3">
+            <label htmlFor="day-select" className="mr-2">
+              Day:
+            </label>
+            <select
+              id="day-select"
+              value={currentDay}
+              onChange={handleDayChange}
+            >
+              {[1, 2, 3, 4, 5].map((d) => (
+                <option key={d} value={d}>{`Day ${d}`}</option>
+              ))}
+            </select>
+          </div>
           <div className="space-y-3">
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">Selected attractions:</span>
               <span className="font-medium">{attractions.length} places</span>
             </div>
-
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Estimated time:</span>
-              <span className="font-medium">2 days</span>
-            </div>
-
             <div className="border-t pt-3">
               <input
                 type="text"
@@ -758,7 +874,6 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
                 onChange={(e) => setRouteName(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
               />
-
               <div className="flex space-x-2">
                 <button
                   onClick={handleSaveCurrentRoute}
