@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useImperativeHandle } from "react";
 import {
   Plus,
   Minus,
@@ -12,201 +12,24 @@ import {
   Info,
 } from "lucide-react";
 import Cookies from "js-cookie";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 // 使用你的 Google Maps API Key
 const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
 
-// 景点数据 - 包含多个城市的真实景点
-// const attractionsData = {
-//   Paris: [
-//     {
-//       id: 1,
-//       name: "Eiffel Tower",
-//       type: "landmark",
-//       icon: "🗼",
-//       coordinates: { lat: 48.8584, lng: 2.2945 },
-//       rating: 4.8,
-//       visitTime: "2-3 hours",
-//       description: "Iconic iron lattice tower and symbol of Paris",
-//       category: "Historical",
-//     },
-//     {
-//       id: 2,
-//       name: "Louvre Museum",
-//       type: "museum",
-//       icon: "🏛️",
-//       coordinates: { lat: 48.8606, lng: 2.3376 },
-//       rating: 4.9,
-//       visitTime: "3-4 hours",
-//       description: "World's largest art museum and historic monument",
-//       category: "Art & Culture",
-//     },
-//     {
-//       id: 3,
-//       name: "Notre-Dame Cathedral",
-//       type: "church",
-//       icon: "⛪",
-//       coordinates: { lat: 48.853, lng: 2.3499 },
-//       rating: 4.7,
-//       visitTime: "1-2 hours",
-//       description: "Medieval Catholic cathedral with Gothic architecture",
-//       category: "Historical",
-//     },
-//   ],
-//   "New York": [
-//     {
-//       id: 4,
-//       name: "Statue of Liberty",
-//       type: "monument",
-//       icon: "🗽",
-//       coordinates: { lat: 40.6892, lng: -74.0445 },
-//       rating: 4.7,
-//       visitTime: "2-3 hours",
-//       description: "Symbol of freedom and democracy",
-//       category: "Historical",
-//     },
-//     {
-//       id: 5,
-//       name: "Central Park",
-//       type: "park",
-//       icon: "🌳",
-//       coordinates: { lat: 40.7829, lng: -73.9654 },
-//       rating: 4.6,
-//       visitTime: "2-4 hours",
-//       description: "Large public park in Manhattan",
-//       category: "Nature",
-//     },
-//     {
-//       id: 6,
-//       name: "Times Square",
-//       type: "landmark",
-//       icon: "🌃",
-//       coordinates: { lat: 40.758, lng: -73.9855 },
-//       rating: 4.3,
-//       visitTime: "1-2 hours",
-//       description: "Busy commercial intersection and tourist destination",
-//       category: "Entertainment",
-//     },
-//   ],
-//   "New York City": [
-//     {
-//       id: 4,
-//       name: "Statue of Liberty",
-//       type: "monument",
-//       icon: "🗽",
-//       coordinates: { lat: 40.6892, lng: -74.0445 },
-//       rating: 4.7,
-//       visitTime: "2-3 hours",
-//       description: "Symbol of freedom and democracy",
-//       category: "Historical",
-//     },
-//     {
-//       id: 5,
-//       name: "Central Park",
-//       type: "park",
-//       icon: "🌳",
-//       coordinates: { lat: 40.7829, lng: -73.9654 },
-//       rating: 4.6,
-//       visitTime: "2-4 hours",
-//       description: "Large public park in Manhattan",
-//       category: "Nature",
-//     },
-//     {
-//       id: 6,
-//       name: "Times Square",
-//       type: "landmark",
-//       icon: "🌃",
-//       coordinates: { lat: 40.758, lng: -73.9855 },
-//       rating: 4.3,
-//       visitTime: "1-2 hours",
-//       description: "Busy commercial intersection and tourist destination",
-//       category: "Entertainment",
-//     },
-//   ],
-//   Orlando: [
-//     {
-//       id: 7,
-//       name: "Walt Disney World",
-//       type: "theme_park",
-//       icon: "🏰",
-//       coordinates: { lat: 28.3852, lng: -81.5639 },
-//       rating: 4.8,
-//       visitTime: "Full day",
-//       description: "The most magical place on earth",
-//       category: "Entertainment",
-//     },
-//     {
-//       id: 8,
-//       name: "Universal Studios",
-//       type: "theme_park",
-//       icon: "🎬",
-//       coordinates: { lat: 28.4743, lng: -81.4677 },
-//       rating: 4.7,
-//       visitTime: "Full day",
-//       description: "Movie-themed amusement park",
-//       category: "Entertainment",
-//     },
-//     {
-//       id: 9,
-//       name: "Lake Eola Park",
-//       type: "park",
-//       icon: "🦢",
-//       coordinates: { lat: 28.5421, lng: -81.3737 },
-//       rating: 4.5,
-//       visitTime: "1-2 hours",
-//       description: "Beautiful urban park with lake and swan boats",
-//       category: "Nature",
-//     },
-//   ],
-//   "Los Angeles": [
-//     {
-//       id: 10,
-//       name: "Hollywood Sign",
-//       type: "landmark",
-//       icon: "🎭",
-//       coordinates: { lat: 34.1341, lng: -118.3215 },
-//       rating: 4.4,
-//       visitTime: "1-2 hours",
-//       description: "Iconic landmark overlooking Hollywood",
-//       category: "Entertainment",
-//     },
-//     {
-//       id: 11,
-//       name: "Santa Monica Pier",
-//       type: "pier",
-//       icon: "🎡",
-//       coordinates: { lat: 34.0082, lng: -118.4987 },
-//       rating: 4.3,
-//       visitTime: "2-3 hours",
-//       description: "Famous pier with amusement park and beach",
-//       category: "Entertainment",
-//     },
-//   ],
-//   London: [
-//     {
-//       id: 12,
-//       name: "Big Ben",
-//       type: "landmark",
-//       icon: "🕐",
-//       coordinates: { lat: 51.4994, lng: -0.1245 },
-//       rating: 4.7,
-//       visitTime: "1 hour",
-//       description: "Iconic clock tower of the Palace of Westminster",
-//       category: "Historical",
-//     },
-//     {
-//       id: 13,
-//       name: "Tower Bridge",
-//       type: "bridge",
-//       icon: "🌉",
-//       coordinates: { lat: 51.5055, lng: -0.0754 },
-//       rating: 4.6,
-//       visitTime: "1-2 hours",
-//       description: "Famous bascule and suspension bridge",
-//       category: "Historical",
-//     },
-//   ],
-// };
 
 export async function fetchCityCoordinates(cityName, apiKey) {
   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(cityName)}&key=${apiKey}`;
@@ -223,22 +46,48 @@ export async function fetchCityCoordinates(cityName, apiKey) {
   }
 }
 
+// SortableItem component for each waypoint
+function SortableItem({ id, name }) {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    padding: "8px 12px",
+    background: "#f9fafb",
+    borderRadius: "6px",
+    marginBottom: "8px",
+    border: "1px solid #e5e7eb",
+    cursor: "grab",
+  };
+  return (
+    <li ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      {name}
+    </li>
+  );
+}
+
 // Google Maps 组件
-const GoogleMapComponent = ({
-  currentCity,
-  attractions,
-  onAttractionClick,
-  places,
-  addPlace,
-  deletePlace,
-  updatePlaceName,
-  addCityToBackend,
-  addPOIToBackend,
-  cityCoordinates,
-}) => {
+const GoogleMapComponent = React.forwardRef((props, ref) => {
+  const {
+    currentCity,
+    attractions,
+    onAttractionClick,
+    places,
+    addPlace,
+    deletePlace,
+    updatePlaceName,
+    addCityToBackend,
+    addPOIToBackend,
+    cityCoordinates,
+  } = props;
+  
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
+  useImperativeHandle(ref, () => ({
+      getMapInstance: () => mapInstanceRef.current,
+    }));
 
   // 初始化地图
   useEffect(() => {
@@ -481,7 +330,10 @@ const GoogleMapComponent = ({
           }
         );
       });
+
     };
+
+    
 
     // 检查 Google Maps API 是否已加载
     if (window.google && window.google.maps) {
@@ -506,10 +358,11 @@ const GoogleMapComponent = ({
     addCityToBackend,
     addPOIToBackend,
     cityCoordinates,
+    ref,
   ]);
 
   return <div ref={mapRef} style={{ width: "100%", height: "100%" }} />;
-};
+});
 
 // 主 MapArea 组件
 const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
@@ -521,13 +374,20 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
     const saved = Cookies.get("placesByDay");
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (parsed.__city && parsed.__city === currentCity) {
+          delete parsed.__city;
+          return parsed;
+        }
       } catch {
-        return { 1: [] };
+        // ignore
       }
     }
     return { 1: [] };
   });
+  const [waypoints, setWaypoints] = useState(
+    (placesByDay[currentDay] || []).map((p, i) => ({ id: p.place_id || `idx-${i}`, name: p.name, lat: p.lat, lng: p.lng, address: p.address || p.formatted_address || "" }))
+  );
 
   const handleDayChange = (e) => {
     setCurrentDay(Number(e.target.value));
@@ -535,6 +395,8 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
   };
 
   const [cityCoordinates, setCityCoordinates] = useState({});
+  const mapRef = useRef(null);
+  const directionsRendererRef = useRef(null)
 
   useEffect(() => {
     async function getCoordinates() {
@@ -553,10 +415,56 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
     getCoordinates();
   }, [currentCity, cityCoordinates]);
 
-  // 1. Save placesByDay to cookies whenever it changes
   useEffect(() => {
-    Cookies.set("placesByDay", JSON.stringify(placesByDay), { expires: 7 });
-  }, [placesByDay]);
+    const saved = Cookies.get("placesByDay");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (!parsed.__city || parsed.__city !== currentCity) {
+          Cookies.remove("placesByDay");
+          setPlacesByDay({ 1: [] });
+          setWaypoints([]);
+        }
+      } catch {
+        Cookies.remove("placesByDay");
+        setPlacesByDay({ 1: [] });
+        setWaypoints([]);
+      }
+    } else {
+      // No cookie, always reset state for new city
+      setPlacesByDay({ 1: [] });
+      setWaypoints([]);
+    }
+    // eslint-disable-next-line
+  }, [currentCity]);
+
+  // Save placesByDay to cookies whenever it changes
+  useEffect(() => {
+  Cookies.set(
+    "placesByDay",
+    JSON.stringify({ ...placesByDay, __city: currentCity }),
+    { expires: 7 }
+  );
+}, [placesByDay, currentCity]);
+
+
+  useEffect(() => {
+    setWaypoints((placesByDay[currentDay] || []).map((p, i) => ({ id: p.place_id || `idx-${i}`, name: p.name, lat: p.lat, lng: p.lng, address: p.address || p.formatted_address || "" })));
+  }, [placesByDay, currentDay]);
+
+  const sensors = useSensors(useSensor(PointerSensor));
+
+  function handleDragEnd(event) {
+    const { active, over } = event;
+    if (active.id !== over.id) {
+      setWaypoints((items) => {
+        const oldIndex = items.findIndex((i) => i.id === active.id);
+        const newIndex = items.findIndex((i) => i.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+      // Optionally: update placesByDay[currentDay] order here as well!
+    }
+  }
 
   // Wrap `addPlace` in useCallback
   const addPlace = React.useCallback(
@@ -762,6 +670,52 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
     // 可选：清空本地数据或刷新 saved routes
   };
 
+
+  const handleGenereteRoute = () => {
+    const places = waypoints;
+    console.log("places for route:", places);
+    console.log("correct", placesByDay[currentDay]);
+    if (!window.google || !mapRef.current || places.length < 2) {
+      alert("Please select at least two places to generate a route.");
+      return;
+    }
+    const map = mapRef.current.getMapInstance();
+
+    // Remove previous route if exists
+    if (directionsRendererRef.current) {
+      directionsRendererRef.current.setMap(null);
+      directionsRendererRef.current = null;
+    }
+
+    const directionsService = new window.google.maps.DirectionsService();
+    const directionsRenderer = new window.google.maps.DirectionsRenderer({
+      map: map,
+      suppressMarkers: true,
+      preserveViewport: true,
+    });
+    directionsRendererRef.current = directionsRenderer;
+
+    const wp = places.slice(1, -1).map((place) => ({
+      location: { lat: place.lat, lng: place.lng },
+      stopover: true,
+    }));
+
+    directionsService.route(
+      {
+        origin: { lat: places[0].lat, lng: places[0].lng },
+        destination: { lat: places[places.length - 1].lat, lng: places[places.length - 1].lng },
+        waypoints: wp,
+        travelMode: window.google.maps.TravelMode.DRIVING,
+      },
+      (result, status) => {
+        if (status === window.google.maps.DirectionsStatus.OK) {
+          directionsRenderer.setDirections(result);
+        } else {
+          alert("Directions request failed: " + status);
+        }
+      }
+    );
+  };  
   // API Key 检查
   if (!GOOGLE_MAPS_API_KEY) {
     return (
@@ -783,6 +737,7 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
       {/* Google Maps 容器 */}
       <div className="w-full h-full relative">
         <GoogleMapComponent
+          ref={mapRef}
           currentCity={currentCity}
           attractions={attractions}
           onAttractionClick={setSelectedAttraction}
@@ -883,7 +838,30 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
             </div>
           </div>
         )}
-
+        {/* 可拖拽的景点列表 */}
+        <div className="absolute bottom-72 left-4 bg-white rounded-lg shadow-xl p-2 max-w-xs w-56 z-10">
+          <h3 className="font-bold text-gray-800 mb-3 flex items-center">
+            <MapPin className="mr-2 text-blue-600" size={20} />
+            Order your Waypoints
+          </h3>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={waypoints.map((p) => p.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <ul className="space-y-2">
+                {waypoints.map((item) => (
+                  <SortableItem key={item.id} id={item.id} name={item.name} />
+                ))}
+              </ul>
+            </SortableContext>
+          </DndContext>
+        </div>
+                
         {/* 路线规划工具 */}
         <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-xl p-4 max-w-md z-10">
           <h3 className="font-bold text-gray-800 mb-3 flex items-center">
@@ -925,8 +903,10 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
                   <Save size={16} className="mr-1" />
                   Save Route
                 </button>
-                <button className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm">
-                  Preview
+                <button className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm"
+                  onClick={handleGenereteRoute}
+                >
+                  Generate Route
                 </button>
               </div>
             </div>
