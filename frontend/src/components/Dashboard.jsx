@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import Cookies from "js-cookie";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
 import MapArea from "./MapArea";
@@ -8,7 +9,9 @@ const Dashboard = () => {
   // 全局状态管理
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedDays, setSelectedDays] = useState("5days");
-  const [currentCity, setCurrentCity] = useState("Paris");
+  const [currentCity, setCurrentCity] = useState(() => {
+    return Cookies.get("currentCity") || "Paris";
+  });
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [savedRoutes, setSavedRoutes] = useState([
     { id: 1, name: "Paris Romantic 3-Day Tour", days: 3, attractions: 8 },
@@ -22,6 +25,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (location.state?.selectedCity) {
       setCurrentCity(location.state.selectedCity);
+      Cookies.set("currentCity", location.state.selectedCity, { expires: 7 });
       console.log("城市已更新为:", location.state.selectedCity);
 
       // 清除路由状态，避免重复触发
