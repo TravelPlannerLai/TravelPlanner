@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "./SelectCity.css";
+import { calculateDays } from "../utils/dateUtils";
 
 const stateCityData = {
   Alabama: ["Birmingham", "Montgomery", "Mobile"],
@@ -56,17 +57,6 @@ const stateCityData = {
   "District of Columbia": ["Washington D.C."],
 };
 
-// 计算天数的函数
-function calculateDays(start, end) {
-  if (!start || !end) return 0;
-  const startDateObj = new Date(start);
-  const endDateObj = new Date(end);
-  // 计算差值（毫秒），再转为天数，+1 保证包含起止两天
-  const diffTime = endDateObj - startDateObj;
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-  return diffDays > 0 ? diffDays : 0;
-}
-
 function SelectCity() {
   const [selectedState, setSelectedState] = useState("");
   const [cities, setCities] = useState([]);
@@ -93,6 +83,13 @@ function SelectCity() {
 
   const handleNavigateToMainPage = () => {
     if (selectedCity) {
+      const days = calculateDays(startDate, endDate);
+      if (days > 10) {
+        alert(
+          "The trip duration cannot exceed 10 days. Please select a shorter date range."
+        );
+        return;
+      }
       if (isFromMainPage) {
         // 如果是从主页面来的，返回主页面并传递选择的城市
         navigate("/main", {
@@ -147,7 +144,7 @@ function SelectCity() {
           </button>
         )}
 
-        <div style={{ marginBottom: "10px" }}>
+        <div>
           <label htmlFor="state-select">State: </label>
           <select
             id="state-select"
@@ -163,7 +160,7 @@ function SelectCity() {
           </select>
         </div>
 
-        <div style={{ marginBottom: "10px" }}>
+        <div>
           <label htmlFor="city-select">City: </label>
           <select
             id="city-select"
@@ -180,6 +177,7 @@ function SelectCity() {
           </select>
         </div>
 
+        <p><strong>Select your trip dates(within 10 days)</strong></p>    
         <div
           style={{
             display: "flex",

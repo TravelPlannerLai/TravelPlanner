@@ -209,13 +209,17 @@ const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
 // };
 
 export async function fetchCityCoordinates(cityName, apiKey) {
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(cityName)}&key=${apiKey}`;
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+    cityName
+  )}&key=${apiKey}`;
   const response = await fetch(url);
   const data = await response.json();
   if (data.status === "OK" && data.results.length > 0) {
     const { lat, lng } = data.results[0].geometry.location;
     // You can also extract country if needed
-    const countryComponent = data.results[0].address_components.find(c => c.types.includes("country"));
+    const countryComponent = data.results[0].address_components.find((c) =>
+      c.types.includes("country")
+    );
     const country = countryComponent ? countryComponent.long_name : "Unknown";
     return { lat, lng, country };
   } else {
@@ -427,56 +431,58 @@ const GoogleMapComponent = ({
                           ? details.photos[0].getUrl()
                           : null,
                     };
-                  // Show detailed info in confirm
-              const confirmMsg = `
+                    // Show detailed info in confirm
+                    const confirmMsg = `
               Add this place to your route?
 
               Name: ${newPlace.name}
               Address: ${newPlace.address}
-              Types: ${Array.isArray(newPlace.types) ? newPlace.types.join(", ") : ""}
+              Types: ${
+                Array.isArray(newPlace.types) ? newPlace.types.join(", ") : ""
+              }
               Rating: ${newPlace.rating ?? "N/A"}
               Open Now: ${
-                              newPlace.opening_hours
-                                ? newPlace.opening_hours.open_now
-                                  ? "Yes"
-                                  : "No"
-                                : "N/A"
-                            }
+                newPlace.opening_hours
+                  ? newPlace.opening_hours.open_now
+                    ? "Yes"
+                    : "No"
+                  : "N/A"
+              }
                           `.trim();
 
                     // Add confirmation before adding
-              if (window.confirm(confirmMsg)) {
-                addPlace(newPlace);
-                addPOIToBackend(currentCity, newPlace);
-              }
+                    if (window.confirm(confirmMsg)) {
+                      addPlace(newPlace);
+                      addPOIToBackend(currentCity, newPlace);
+                    }
                   }
                 }
               );
             } else {
               // fallback if no place found
-        const fallbackPlace = {
-          name: "Selected Location",
-          address: `Lat: ${e.latLng.lat().toFixed(6)}, Lng: ${e.latLng
-            .lng()
-            .toFixed(6)}`,
-          lat: e.latLng.lat(),
-          lng: e.latLng.lng(),
-          place_id: null,
-          types: [],
-          price_level: null,
-          rating: null,
-          user_ratings_total: null,
-          opening_hours: null,
-          photo_reference: null,
-        };
-        const confirmMsg = `
+              const fallbackPlace = {
+                name: "Selected Location",
+                address: `Lat: ${e.latLng.lat().toFixed(6)}, Lng: ${e.latLng
+                  .lng()
+                  .toFixed(6)}`,
+                lat: e.latLng.lat(),
+                lng: e.latLng.lng(),
+                place_id: null,
+                types: [],
+                price_level: null,
+                rating: null,
+                user_ratings_total: null,
+                opening_hours: null,
+                photo_reference: null,
+              };
+              const confirmMsg = `
         Add this location to your route?
 
         ${fallbackPlace.address}
                 `.trim();
-        if (window.confirm(confirmMsg)) {
-          addPlace(fallbackPlace);
-        }
+              if (window.confirm(confirmMsg)) {
+                addPlace(fallbackPlace);
+              }
             }
           }
         );
@@ -512,7 +518,13 @@ const GoogleMapComponent = ({
 };
 
 // 主 MapArea 组件
-const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
+const MapArea = ({
+  currentCity,
+  selectedDays,
+  selectedRoute,
+  onSaveRoute,
+  tripDays = 5,
+}) => {
   const [selectedAttraction, setSelectedAttraction] = useState(null);
   const [showAIAssistant, setShowAIAssistant] = useState(true);
   const [routeName, setRouteName] = useState("");
@@ -540,8 +552,11 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
     async function getCoordinates() {
       if (!cityCoordinates[currentCity]) {
         try {
-          const coords = await fetchCityCoordinates(currentCity, GOOGLE_MAPS_API_KEY);
-          setCityCoordinates(prev => ({
+          const coords = await fetchCityCoordinates(
+            currentCity,
+            GOOGLE_MAPS_API_KEY
+          );
+          setCityCoordinates((prev) => ({
             ...prev,
             [currentCity]: coords,
           }));
@@ -609,7 +624,7 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
         body: JSON.stringify(city),
       });
       if (response.status === 409) {
-        console.warn('City already exists');
+        console.warn("City already exists");
         return;
       }
       if (!response.ok) {
@@ -721,20 +736,22 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
       planDateObj.setDate(planDateObj.getDate() + (dayNumber - 1));
       const planDate = planDateObj.toISOString().slice(0, 10);
       // 组装 pois
-      const pois = pins.filter(p => p.place_id || p.placeId).map((p, idx) => ({
-        cityId,
-        placeId: p.place_id || p.placeId,
-        name: p.name,
-        formattedAddress: p.address || p.formattedAddress || "",
-        types: p.types || [],
-        lat: p.lat,
-        lng: p.lng,
-        openingHours: p.opening_hours || p.openingHours || null,
-        rating: p.rating || null,
-        userRatingsTotal: p.user_ratings_total || p.userRatingsTotal || null,
-        photoReference: p.photo_reference || p.photoReference || null,
-        visitOrder: idx + 1,
-      }));
+      const pois = pins
+        .filter((p) => p.place_id || p.placeId)
+        .map((p, idx) => ({
+          cityId,
+          placeId: p.place_id || p.placeId,
+          name: p.name,
+          formattedAddress: p.address || p.formattedAddress || "",
+          types: p.types || [],
+          lat: p.lat,
+          lng: p.lng,
+          openingHours: p.opening_hours || p.openingHours || null,
+          rating: p.rating || null,
+          userRatingsTotal: p.user_ratings_total || p.userRatingsTotal || null,
+          photoReference: p.photo_reference || p.photoReference || null,
+          visitOrder: idx + 1,
+        }));
       const dayPlanReq = {
         dayNumber,
         planDate,
@@ -899,8 +916,8 @@ const MapArea = ({ currentCity, selectedDays, selectedRoute, onSaveRoute }) => {
               value={currentDay}
               onChange={handleDayChange}
             >
-              {[1, 2, 3, 4, 5].map((d) => (
-                <option key={d} value={d}>{`Day ${d}`}</option>
+              {Array.from({ length: tripDays }, (_, i) => (
+                <option key={i + 1} value={i + 1}>{`Day ${i + 1}`}</option>
               ))}
             </select>
           </div>

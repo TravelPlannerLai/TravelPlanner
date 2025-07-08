@@ -4,6 +4,7 @@ import Cookies from "js-cookie";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
 import MapArea from "./MapArea";
+import { calculateDays } from "../utils/dateUtils";
 
 const Dashboard = () => {
   // 全局状态管理
@@ -37,6 +38,12 @@ const Dashboard = () => {
         setSavedRoutes(data);
       });
   }, []);
+
+  // 新增：获取天数
+  const tripDays =
+    location.state?.startDate && location.state?.endDate
+      ? calculateDays(location.state.startDate, location.state.endDate)
+      : 5; // 默认5天
 
   // 明确定义切换函数
   const handleSidebarToggle = () => {
@@ -95,6 +102,7 @@ const Dashboard = () => {
           selectedDays={selectedDays}
           selectedRoute={selectedRoute}
           onSaveRoute={handleSaveRoute}
+          tripDays={tripDays} // 传递天数
         />
       </div>
     </div>
