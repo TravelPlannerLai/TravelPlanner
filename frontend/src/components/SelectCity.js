@@ -56,10 +56,24 @@ const stateCityData = {
   "District of Columbia": ["Washington D.C."],
 };
 
+// 计算天数的函数
+function calculateDays(start, end) {
+  if (!start || !end) return 0;
+  const startDateObj = new Date(start);
+  const endDateObj = new Date(end);
+  // 计算差值（毫秒），再转为天数，+1 保证包含起止两天
+  const diffTime = endDateObj - startDateObj;
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  return diffDays > 0 ? diffDays : 0;
+}
+
 function SelectCity() {
   const [selectedState, setSelectedState] = useState("");
   const [cities, setCities] = useState([]);
   const [selectedCity, setSelectedCity] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [tripName, setTripName] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -85,6 +99,9 @@ function SelectCity() {
           state: {
             selectedCity: selectedCity,
             selectedState: selectedState,
+            startDate: startDate,
+            endDate: endDate,
+            tripName: tripName,
           },
         });
       } else {
@@ -94,6 +111,9 @@ function SelectCity() {
             city: selectedCity,
             selectedCity: selectedCity,
             selectedState: selectedState,
+            startDate: startDate,
+            endDate: endDate,
+            tripName: tripName,
           },
         });
       }
@@ -143,7 +163,7 @@ function SelectCity() {
           </select>
         </div>
 
-        <div>
+        <div style={{ marginBottom: "10px" }}>
           <label htmlFor="city-select">City: </label>
           <select
             id="city-select"
@@ -160,7 +180,78 @@ function SelectCity() {
           </select>
         </div>
 
-        {selectedState && selectedCity && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: "4%",
+            marginBottom: "10px",
+          }}
+        >
+          <div
+            style={{ width: "48%", display: "flex", flexDirection: "column" }}
+          >
+            <label
+              htmlFor="start-date"
+              style={{ fontWeight: "bold", marginBottom: "4px" }}
+            >
+              Start Date:
+            </label>
+            <input
+              id="start-date"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "8px",
+                borderRadius: "5px",
+                border: "1px solid #ccc",
+              }}
+            />
+          </div>
+          <div
+            style={{ width: "48%", display: "flex", flexDirection: "column" }}
+          >
+            <label
+              htmlFor="end-date"
+              style={{ fontWeight: "bold", marginBottom: "4px" }}
+            >
+              End Date:
+            </label>
+            <input
+              id="end-date"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "8px",
+                borderRadius: "5px",
+                border: "1px solid #ccc",
+              }}
+            />
+          </div>
+        </div>
+
+        <div style={{ marginBottom: "10px" }}>
+          <label htmlFor="trip-name">Trip Name: </label>
+          <input
+            id="trip-name"
+            type="text"
+            placeholder="Enter your trip name"
+            value={tripName}
+            onChange={(e) => setTripName(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "8px",
+              borderRadius: "5px",
+              border: "1px solid #ccc",
+            }}
+          />
+        </div>
+
+        {selectedState && selectedCity && startDate && endDate && (
           <div style={{ marginTop: "20px" }}>
             <h2>You selected:</h2>
             <p>
@@ -169,8 +260,16 @@ function SelectCity() {
             <p>
               City: <strong>{selectedCity}</strong>
             </p>
+            <p>
+              Your Trip Includes:{" "}
+              {startDate && endDate && (
+                <span>
+                  <strong>{calculateDays(startDate, endDate)} days</strong>
+                </span>
+              )}
+            </p>
             <button onClick={handleNavigateToMainPage}>
-              {isFromMainPage ? "Update City" : "Go to Map"}
+              {isFromMainPage ? "Update" : "Go to Map"}
             </button>
           </div>
         )}
