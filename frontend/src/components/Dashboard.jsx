@@ -31,19 +31,63 @@ const Dashboard = () => {
   }, [location.state]);
 
   useEffect(() => {
-    fetch("/api/trips", { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => {
-        // 假设 data 是 trips 数组
-        setSavedRoutes(data);
-      });
+    async function fetchTripsWithPlaces() {
+      try {
+        const tripsRes = await fetch("/api/trips", { credentials: "include" });
+        const trips = await tripsRes.json();
+
+        // Fetch all day plans in parallel
+        const tripsWithPlaces = await Promise.all(
+          (Array.isArray(trips) ? trips : []).map(async (trip) => {
+            const dayPlansRes = await fetch(
+              `/api/dayPlans/trip/${trip.tripId}/full-itinerary`,
+              { credentials: "include" }
+            );
+            const dayPlans = await dayPlansRes.json();
+
+            // Flatten all POIs for this trip, preserving day info if needed
+            const places = [];
+            dayPlans.forEach((dayPlan) => {
+              (dayPlan.pois || []).forEach((poi) => {
+                places.push({
+                  name: poi.name,
+                  lat: poi.lat,
+                  lng: poi.lng,
+                  address: poi.formattedAddress,
+                  visitOrder: poi.visitOrder, // 保留访问顺序
+                  place_id: poi.place_id, // 确保有唯一标识符
+                  planDate: dayPlan.planDate, // 关联计划日期
+                  ...poi,
+                });
+              });
+            });
+
+            return {
+              ...trip,
+              days: dayPlans.length,
+              places,
+              startDate: trip.startDate,
+              cityId: trip.cityId,
+              tripId: trip.tripId,
+            };
+          })
+        );
+
+        setSavedRoutes(tripsWithPlaces);
+      } catch (err) {
+        console.error("Error fetching trips or day plans:", err);
+        setSavedRoutes([]);
+      }
+    }
+
+    fetchTripsWithPlaces();
   }, []);
 
   // 新增：获取天数
   const tripDays =
     location.state?.startDate && location.state?.endDate
       ? calculateDays(location.state.startDate, location.state.endDate)
-      : 5; // 默认5天
+      : 10; // 默认10天
 
   // 明确定义切换函数
   const handleSidebarToggle = () => {
@@ -58,13 +102,16 @@ const Dashboard = () => {
   };
 
   // 处理新路线保存
-  const handleSaveRoute = (routeData) => {
+  const onSaveRoute = (routeData) => {
     const newRoute = {
-      id: Date.now(),
-      name: routeData.name,
+      id: Date.now(), // 使用当前时间戳作为唯一ID
       days: routeData.days,
-      attractions: routeData.attractions,
+      startDate: routeData.startDate || new Date().toISOString().split("T")[0],
+      cityId: routeData.cityId || null, // 如果有 cityId 则使用它，否则为 null
+      tripId: routeData.tripId || null, // 如果有 tripId 则使用它，否则为 null
+      places: Array.isArray(routeData.places) ? routeData.places : [], // 确保 places
     };
+    console.log("Saving new route:", newRoute);
     setSavedRoutes([...savedRoutes, newRoute]);
   };
 
@@ -101,7 +148,7 @@ const Dashboard = () => {
           currentCity={currentCity}
           selectedDays={selectedDays}
           selectedRoute={selectedRoute}
-          onSaveRoute={handleSaveRoute}
+          onSaveRoute={onSaveRoute}
           tripDays={tripDays} // 传递天数
         />
       </div>

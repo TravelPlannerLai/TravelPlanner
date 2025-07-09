@@ -120,30 +120,30 @@ const GoogleMapComponent = React.forwardRef((props, ref) => {
       markersRef.current = [];
 
       // 添加景点标记
-      if (attractions && attractions.length > 0) {
-        attractions.forEach((attraction) => {
-          const marker = new window.google.maps.Marker({
-            position: attraction.coordinates,
-            map: map,
-            title: attraction.name,
-            icon: {
-              url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-                <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="20" cy="20" r="18" fill="white" stroke="#3B82F6" stroke-width="2"/>
-                  <text x="20" y="28" text-anchor="middle" font-size="16">${attraction.icon}</text>
-                </svg>
-              `)}`,
-              scaledSize: new window.google.maps.Size(40, 40),
-            },
-          });
+      // if (attractions && attractions.length > 0) {
+      //   attractions.forEach((attraction) => {
+      //     const marker = new window.google.maps.Marker({
+      //       position: attraction.coordinates,
+      //       map: map,
+      //       title: attraction.name,
+      //       icon: {
+      //         url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+      //           <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+      //             <circle cx="20" cy="20" r="18" fill="white" stroke="#3B82F6" stroke-width="2"/>
+      //             <text x="20" y="28" text-anchor="middle" font-size="16">${attraction.icon}</text>
+      //           </svg>
+      //         `)}`,
+      //         scaledSize: new window.google.maps.Size(40, 40),
+      //       },
+      //     });
 
-          marker.addListener("click", () => {
-            onAttractionClick(attraction);
-          });
+      //     marker.addListener("click", () => {
+      //       onAttractionClick(attraction);
+      //     });
 
-          markersRef.current.push(marker);
-        });
-      }
+      //     markersRef.current.push(marker);
+      //   });
+      // }
       if (places && places.length > 0) {
         places.forEach((place, idx) => {
           const marker = new window.google.maps.Marker({
@@ -382,10 +382,9 @@ const MapArea = ({
   selectedDays,
   selectedRoute,
   onSaveRoute,
-  tripDays = 5,
+  tripDays = 10,
 }) => {
   const [showAIAssistant, setShowAIAssistant] = useState(true);
-  const [routeName, setRouteName] = useState("");
   const [currentDay, setCurrentDay] = useState(1);
   const [placesByDay, setPlacesByDay] = useState(() => {
     const saved = Cookies.get("placesByDay");
@@ -588,7 +587,7 @@ const MapArea = ({
 
   const handleSaveCurrentRoute = async () => {
     // 统计有图钉的天数和天号
-    const daysWithPins = Object.entries(placesByDay).filter(
+    const daysWithPins = [[currentDay, waypoints]].filter(
       ([day, pins]) => pins && pins.length > 0
     );
     console.log("Days with pins:", daysWithPins);
@@ -650,10 +649,10 @@ const MapArea = ({
       const planDate = planDateObj.toISOString().slice(0, 10);
       // 组装 pois
       const pois = pins
-        .filter((p) => p.place_id || p.placeId)
+        .filter((p) => p.id)
         .map((p, idx) => ({
           cityId,
-          placeId: p.place_id || p.placeId,
+          placeId: p.id,
           name: p.name,
           formattedAddress: p.address || p.formattedAddress || "",
           types: p.types || [],
@@ -683,6 +682,22 @@ const MapArea = ({
         if (!planRes.ok) {
           throw new Error("保存 day plan 失败");
         }
+        console.log("POIS to save:", pois);
+        onSaveRoute({
+          days: dayNumber,
+          places: pois.map((p) => ({
+            name: p.name,
+            lat: p.lat,
+            lng: p.lng,
+            address: p.formattedAddress || p.address || "",
+            visitOrder: p.visitOrder,
+            placeId: p.placeId || p.place_id,
+            planDate: p.planDate || planDate,
+          })),
+          tripId,
+          cityId,
+          startDate,
+        });
       } catch (e) {
         alert(`保存第${dayNumber}天路线失败`);
         return;
@@ -871,10 +886,10 @@ const MapArea = ({
         </div>
 
           {/* 可拖拽的景点列表 */}
-          <div className="absolute bottom-72 left-4 bg-white rounded-lg shadow-xl p-2 max-w-xs w-56 z-10 text-[11px]">
+          <div className="absolute bottom-52 left-4 bg-white rounded-lg shadow-xl p-2 max-w-xs w-56 z-10 text-[11px]">
             <h3 className="font-bold text-gray-800 mb-3 flex items-center text-[11px]" >
               <MapPin className="mr-2 text-blue-600" size={15} />
-              Order your Waypoints
+              Drag below waypoints to reorder
             </h3>
             <DndContext
               sensors={sensors}
@@ -920,13 +935,6 @@ const MapArea = ({
               <span className="font-medium">{attractions.length} places</span>
             </div>
             <div className="border-t pt-3">
-              <input
-                type="text"
-                placeholder="Name your route..."
-                value={routeName}
-                onChange={(e) => setRouteName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
-              />
               <div className="flex space-x-2">
                 <button
                   onClick={handleSaveCurrentRoute}
