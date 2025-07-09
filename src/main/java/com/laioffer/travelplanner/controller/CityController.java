@@ -26,13 +26,14 @@ public class CityController {
             @RequestBody SaveCityRequest request) {
         if (cityRepository.findCityEntityByName(request.name()).isPresent()) {
             return null;
+        }else{
+            return cityService.saveCity(
+                    request.name(),
+                    request.country(),
+                    request.lat(),
+                    request.lon()
+            );
         }
-        return cityService.saveCity(
-                request.name(),
-                request.country(),
-                request.lat(),
-                request.lon()
-        );
     }
 
 //    @GetMapping("/getCityId/{name}")

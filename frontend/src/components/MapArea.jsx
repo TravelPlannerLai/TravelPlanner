@@ -4,12 +4,9 @@ import {
   Minus,
   Compass,
   MapPin,
-  Clock,
-  Star,
   Bot,
   Save,
   Navigation,
-  Info,
 } from "lucide-react";
 import Cookies from "js-cookie";
 import {
@@ -341,17 +338,26 @@ const GoogleMapComponent = React.forwardRef((props, ref) => {
 
     
 
-    // 检查 Google Maps API 是否已加载
-    if (window.google && window.google.maps) {
-      initMap();
+    // Before appending the script
+    if (!window.google || !window.google.maps) {
+      if (!document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]')) {
+        const script = document.createElement("script");
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+        script.async = true;
+        script.defer = true;
+        script.onload = initMap;
+        document.head.appendChild(script);
+      } else {
+        // If script exists but google.maps is not ready, wait and retry
+        const interval = setInterval(() => {
+          if (window.google && window.google.maps) {
+            clearInterval(interval);
+            initMap();
+          }
+        }, 100);
+      }
     } else {
-      // 加载 Google Maps API
-      const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      script.onload = initMap;
-      document.head.appendChild(script);
+      initMap();
     }
   }, [
     currentCity,
@@ -378,7 +384,6 @@ const MapArea = ({
   onSaveRoute,
   tripDays = 5,
 }) => {
-  const [selectedAttraction, setSelectedAttraction] = useState(null);
   const [showAIAssistant, setShowAIAssistant] = useState(true);
   const [routeName, setRouteName] = useState("");
   const [currentDay, setCurrentDay] = useState(1);
@@ -403,7 +408,6 @@ const MapArea = ({
 
   const handleDayChange = (e) => {
     setCurrentDay(Number(e.target.value));
-    setSelectedAttraction(null);
   };
 
   const [cityCoordinates, setCityCoordinates] = useState({});
@@ -418,6 +422,7 @@ const MapArea = ({
             currentCity,
             GOOGLE_MAPS_API_KEY
           );
+          console.log("Fetched coords:", coords);
           setCityCoordinates((prev) => ({
             ...prev,
             [currentCity]: coords,
@@ -690,8 +695,6 @@ const MapArea = ({
 
   const handleGenereteRoute = () => {
     const places = waypoints;
-    console.log("places for route:", places);
-    console.log("correct", placesByDay[currentDay]);
     if (!window.google || !mapRef.current || places.length < 2) {
       alert("Please select at least two places to generate a route.");
       return;
@@ -703,12 +706,20 @@ const MapArea = ({
       directionsRendererRef.current.setMap(null);
       directionsRendererRef.current = null;
     }
+    if (window.arrowPolylines) {
+      window.arrowPolylines.forEach((poly) => poly.setMap(null));
+      window.arrowPolylines = [];
+    }
 
     const directionsService = new window.google.maps.DirectionsService();
     const directionsRenderer = new window.google.maps.DirectionsRenderer({
       map: map,
       suppressMarkers: true,
       preserveViewport: true,
+      polylineOptions: {
+        strokeColor: "#2563eb",
+        strokeWeight: 5,
+      },
     });
     directionsRendererRef.current = directionsRenderer;
 
@@ -723,16 +734,79 @@ const MapArea = ({
         destination: { lat: places[places.length - 1].lat, lng: places[places.length - 1].lng },
         waypoints: wp,
         travelMode: window.google.maps.TravelMode.DRIVING,
+        provideRouteAlternatives: false, // Do not show alternative routes
       },
       (result, status) => {
         if (status === window.google.maps.DirectionsStatus.OK) {
-          directionsRenderer.setDirections(result);
+          // Only show the main route in the default renderer
+          directionsRenderer.setDirections({
+            ...result,
+            routes: [result.routes[0]],
+          });
+
+          // Remove previous arrow polylines
+          if (window.arrowPolylines) {
+            window.arrowPolylines.forEach((poly) => poly.setMap(null));
+          }
+          window.arrowPolylines = [];
+
+          // Define colors for up to 8 segments
+          const segmentColors = [
+            "#2563eb", // blue
+            "#f59e42", // orange
+            "#10b981", // green
+            "#f43f5e", // red
+            "#a855f7", // purple
+            "#eab308", // yellow
+            "#6366f1", // indigo
+            "#14b8a6", // teal
+          ];
+
+          // Draw arrows for each segment between waypoints for the main route
+          const route = result.routes[0];
+          if (route && route.legs && route.legs.length > 0) {
+            for (let i = 0; i < route.legs.length; i++) {
+              const leg = route.legs[i];
+              let segmentPath = [];
+              leg.steps.forEach((step) => {
+                if (step.path && step.path.length > 0) {
+                  segmentPath = segmentPath.concat(step.path);
+                }
+              });
+              if (segmentPath.length > 1) {
+                const color = segmentColors[i % segmentColors.length];
+                const arrowSymbol = {
+                  path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                  scale: 1.5,
+                  strokeColor: "#fff",
+                  fillColor: "#fff",
+                  fillOpacity: 1,
+                };
+                const arrowPolyline = new window.google.maps.Polyline({
+                  path: segmentPath,
+                  icons: [
+                    {
+                      icon: arrowSymbol,
+                      offset: "0%",
+                      repeat: "60px",
+                    },
+                  ],
+                  strokeColor: color,
+                  strokeWeight: 5,
+                  strokeOpacity: 0.9,
+                  map: map,
+                  zIndex: 2,
+                });
+                window.arrowPolylines.push(arrowPolyline);
+              }
+            }
+          }
         } else {
           alert("Directions request failed: " + status);
         }
       }
     );
-  };  
+  };
   // API Key 检查
   if (!GOOGLE_MAPS_API_KEY) {
     return (
@@ -757,7 +831,6 @@ const MapArea = ({
           ref={mapRef}
           currentCity={currentCity}
           attractions={attractions}
-          onAttractionClick={setSelectedAttraction}
           places={placesByDay[currentDay] || []}
           addPlace={addPlace}
           deletePlace={deletePlace}
@@ -797,89 +870,31 @@ const MapArea = ({
           </button>
         </div>
 
-        {/* 景点详情面板 */}
-        {selectedAttraction && (
-          <div className="absolute top-20 left-4 bg-white rounded-lg shadow-xl p-4 max-w-sm z-10">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center space-x-3">
-                <span className="text-2xl">{selectedAttraction.icon}</span>
-                <div>
-                  <h3 className="font-bold text-gray-800">
-                    {selectedAttraction.name}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {selectedAttraction.category}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedAttraction(null)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-1">
-                  <Star
-                    size={16}
-                    className="text-yellow-500"
-                    fill="currentColor"
-                  />
-                  <span className="font-medium">
-                    {selectedAttraction.rating}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-1 text-gray-600">
-                  <Clock size={16} />
-                  <span className="text-sm">
-                    {selectedAttraction.visitTime}
-                  </span>
-                </div>
-              </div>
-
-              <p className="text-sm text-gray-700">
-                {selectedAttraction.description}
-              </p>
-
-              <div className="flex space-x-2">
-                <button className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium">
-                  Add to Route
-                </button>
-                <button className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
-                  <Info size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        {/* 可拖拽的景点列表 */}
-        <div className="absolute bottom-72 left-4 bg-white rounded-lg shadow-xl p-2 max-w-xs w-56 z-10">
-          <h3 className="font-bold text-gray-800 mb-3 flex items-center">
-            <MapPin className="mr-2 text-blue-600" size={20} />
-            Order your Waypoints
-          </h3>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={waypoints.map((p) => p.id)}
-              strategy={verticalListSortingStrategy}
+          {/* 可拖拽的景点列表 */}
+          <div className="absolute bottom-72 left-4 bg-white rounded-lg shadow-xl p-2 max-w-xs w-56 z-10 text-[11px]">
+            <h3 className="font-bold text-gray-800 mb-3 flex items-center text-[11px]" >
+              <MapPin className="mr-2 text-blue-600" size={15} />
+              Order your Waypoints
+            </h3>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
             >
-              <ul className="space-y-2">
-                {waypoints.map((item) => (
-                  <SortableItem key={item.id} id={item.id} name={item.name} />
-                ))}
-              </ul>
-            </SortableContext>
-          </DndContext>
-        </div>
-                
-        {/* 路线规划工具 */}
+              <SortableContext
+                items={waypoints.map((p) => p.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <ul className="space-y-2">
+            {waypoints.map((item) => (
+              <SortableItem key={item.id} id={item.id} name={item.name} />
+            ))}
+                </ul>
+              </SortableContext>
+            </DndContext>
+          </div>
+            
+          {/* 路线规划工具 */}
         <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-xl p-4 max-w-md z-10">
           <h3 className="font-bold text-gray-800 mb-3 flex items-center">
             <MapPin className="mr-2 text-blue-600" size={20} />
