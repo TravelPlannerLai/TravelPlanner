@@ -27,10 +27,22 @@ const LoginPage = () => {
       });
 
       if (response.ok) {
-        // 登录成功
-        alert("登录成功！");
         localStorage.setItem("userToken", "true");
-        navigate("/select_city");
+        // 新增：获取当前用户信息
+        fetch("http://localhost:8080/api/user/me", { credentials: "include" })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.username) {
+              localStorage.setItem("username", data.username);
+            }
+            if (data.email) {
+              localStorage.setItem("email", data.email);
+            }
+            navigate("/select_city");
+          })
+          .catch(() => {
+            navigate("/select_city");
+          });
       } else {
         // 4. 登录失败提示
         alert("登录失败，检查账号或密码");
