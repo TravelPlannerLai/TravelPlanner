@@ -236,19 +236,30 @@ const Sidebar = ({
                   >
                 <div className="text-xs text-gray-500 mb-1">
                 <span className="font-semibold">Trip Name:</span> {route.name || "No Name"}
-                <ul className="ml-4 mt-1 space-y-1 list-decimal">
-                  {route.places.map((place, idx) => (
-                    <li key={place.place_id || idx} className="pl-1 text-left">
-                        <span className="font-semibold">#{place.visitOrder}</span>
-                        {place.planDate && (
-                          <span className="ml-2 text-gray-400">[{place.planDate}]</span>
+                <ul className="ml-4 mt-1 space-y-1 list-none">
+                  {route.places.map((place, idx) => {
+                    const prevPlanDate = idx > 0 ? route.places[idx - 1].planDate : null;
+                    const showDivider = idx > 0 && place.planDate !== prevPlanDate;
+                    return (
+                      <React.Fragment key={place.place_id || idx}>
+                        {showDivider && (
+                          <li>
+                            <hr className="my-1 border-gray-300" />
+                          </li>
                         )}
-                        <span className="ml-2">{place.name}</span>
-                        <span className="ml-2 text-gray-400">
-                          ({place.address || "No address"})
-                        </span>
-                    </li>
-                  ))}
+                        <li className="pl-1 text-left">
+                          <span className="font-semibold">#{place.visitOrder}</span>
+                          {place.planDate && (
+                            <span className="ml-2 text-gray-400">[{place.planDate}]</span>
+                          )}
+                          <span className="ml-2">{place.name}</span>
+                          <span className="ml-2 text-gray-400">
+                            ({place.address || "No address"})
+                          </span>
+                        </li>
+                      </React.Fragment>
+                    );
+                  })}
                 </ul>
                 </div>
                 {/* Show startDate, days, city name, and plan_date */}

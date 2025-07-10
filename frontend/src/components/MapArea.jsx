@@ -112,31 +112,6 @@ const GoogleMapComponent = React.forwardRef((props, ref) => {
       markersRef.current.forEach((marker) => marker.setMap(null));
       markersRef.current = [];
 
-      // 添加景点标记
-      // if (attractions && attractions.length > 0) {
-      //   attractions.forEach((attraction) => {
-      //     const marker = new window.google.maps.Marker({
-      //       position: attraction.coordinates,
-      //       map: map,
-      //       title: attraction.name,
-      //       icon: {
-      //         url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-      //           <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-      //             <circle cx="20" cy="20" r="18" fill="white" stroke="#3B82F6" stroke-width="2"/>
-      //             <text x="20" y="28" text-anchor="middle" font-size="16">${attraction.icon}</text>
-      //           </svg>
-      //         `)}`,
-      //         scaledSize: new window.google.maps.Size(40, 40),
-      //       },
-      //     });
-
-      //     marker.addListener("click", () => {
-      //       onAttractionClick(attraction);
-      //     });
-
-      //     markersRef.current.push(marker);
-      //   });
-      // }
       if (places && places.length > 0) {
         places.forEach((place, idx) => {
           const marker = new window.google.maps.Marker({
@@ -298,30 +273,7 @@ const GoogleMapComponent = React.forwardRef((props, ref) => {
                 }
               );
             } else {
-              // fallback if no place found
-              const fallbackPlace = {
-                name: "Selected Location",
-                address: `Lat: ${e.latLng.lat().toFixed(6)}, Lng: ${e.latLng
-                  .lng()
-                  .toFixed(6)}`,
-                lat: e.latLng.lat(),
-                lng: e.latLng.lng(),
-                place_id: null,
-                types: [],
-                price_level: null,
-                rating: null,
-                user_ratings_total: null,
-                opening_hours: null,
-                photo_reference: null,
-              };
-              const confirmMsg = `
-        Add this location to your route?
-
-        ${fallbackPlace.address}
-                `.trim();
-              if (window.confirm(confirmMsg)) {
-                addPlace(fallbackPlace);
-              }
+              alert("Customized pin cannot be added to Route");
             }
           }
         );
@@ -734,6 +686,7 @@ const MapArea = ({
     }
     alert("路线已成功保存到数据库！");
     // 可选：清空本地数据或刷新 saved routes
+    window.location.reload();
   };
 
 

@@ -36,14 +36,26 @@ public class DayPlanService {
 
     public void saveDayPlanWithRouteAndPois(UUID tripId, DayPlanSaveRequest request) {
 
-        // Save DayPlan
-        DayPlanEntity dayPlan = new DayPlanEntity(
-                null,
+        Optional<DayPlanEntity> existingDayPlan = dayPlanRepository.findByTripIdAndDayNumberAndPlanDate(
                 tripId,
                 request.dayNumber(),
                 request.planDate()
         );
-        dayPlan = dayPlanRepository.save(dayPlan);
+
+        // Use the existing DayPlanEntity if it exists; otherwise, create a new one
+        DayPlanEntity dayPlan = existingDayPlan.orElseGet(() -> {
+            DayPlanEntity newDayPlan = new DayPlanEntity(
+                    null,
+                    tripId,
+                    request.dayNumber(),
+                    request.planDate()
+            );
+            return dayPlanRepository.save(newDayPlan);
+        });
+
+        // Retrieve the existing day plan and remove all its associated routes
+        // Delete associated routes
+        existingDayPlan.ifPresent(dayPlanEntity -> routeRepository.deleteByPlanId(dayPlanEntity.planId()));
 
         // Save POIs and Route entries
         for (var poiReq : request.pois()) {
