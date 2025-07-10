@@ -7,6 +7,8 @@ import com.laioffer.travelplanner.repository.UsersRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
@@ -80,5 +82,11 @@ public class UserController {
         return ResponseEntity.ok(
                 Map.of("status", 200, "users", list)
         );
+    }
+
+    @GetMapping("/api/users/username")
+    public String getUsername(@AuthenticationPrincipal User user){
+        UUID id = authService.getIdByEmail(user.getUsername());
+        return authService.getNameById(id);
     }
 }

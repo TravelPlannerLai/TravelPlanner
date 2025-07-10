@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
+import Cookies from "js-cookie";
 
 const Sidebar = ({
   collapsed,
@@ -37,6 +38,42 @@ const Sidebar = ({
     }
   };
 
+  // 获取 username
+  const [username, setUsername] = React.useState("");
+
+  React.useEffect(() => {
+    const fetchUsername = async () => {
+      try {
+        const response = await fetch("/api/users/username", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (!response.ok) {
+          console.error("Failed to fetch username:", response.statusText);
+          setUsername("no user");
+          return;
+        }
+        const text = await response.text();
+        console.log("Fetched username:", text);
+        if (text.length > 30){
+          console.warn("Username is too long, truncating to 30 characters.");
+          setUsername("no user");
+        }else{
+          setUsername(text || "no user");
+        }
+      } catch (error) {
+        console.error("Error fetching username:", error);
+        setUsername("error");
+      }
+    };
+
+    if (isLoggedIn) {
+      fetchUsername();
+    }
+  }, [isLoggedIn]);
+
   // 处理登出功能
   const handleLogout = () => {
     if (window.confirm("Are you sure you want to logout?")) {
@@ -46,6 +83,10 @@ const Sidebar = ({
       localStorage.removeItem("userToken");
       localStorage.removeItem("userData");
       localStorage.removeItem("selectedCity");
+
+      // 清除 cookies
+      Cookies.remove("currentCity");
+      Cookies.remove("placesByDay");
 
       // 清除会话数据
       sessionStorage.clear();
@@ -97,41 +138,45 @@ const Sidebar = ({
       }`}
     >
       {/* 头部 - 修复切换按钮 */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          {!collapsed && (
-            <div>
-              <h1 className="text-xl font-bold text-blue-600">TravelPlanner</h1>
-              <p className="text-xs text-gray-500">Discover & Plan</p>
-            </div>
-          )}
-          <button
-            onClick={handleToggleClick}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-            type="button"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-          </button>
-        </div>
-      </div>
-
-      {/* 用户信息 */}
-      <div className="p-4 border-b border-gray-100">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-            <User size={20} className="text-white" />
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            {!collapsed && (
+          <div>
+            <h1 className="text-xl font-bold text-blue-600">TravelPlanner</h1>
+            <p className="text-xs text-gray-500">Discover & Plan</p>
           </div>
-          {!collapsed && (
-            <div>
-              <h3 className="font-semibold text-gray-800">Travel Explorer</h3>
-              <p className="text-sm text-gray-500">Premium Member</p>
-            </div>
-          )}
+            )}
+            <button
+          onClick={handleToggleClick}
+          className="p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+          type="button"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+          {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* 主导航菜单 */}
+        {/* 用户信息 */}
+        <div className="p-4 border-b border-gray-100">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+          <User size={20} className="text-white" />
+            </div>
+            {!collapsed && (
+          <div>
+            <h3 className="font-semibold text-gray-800">
+              {isLoggedIn ? username: "Not Logged In"}
+            </h3>
+            <p className="text-sm text-gray-500">
+              {isLoggedIn ? "Premium Member" : ""}
+            </p>
+          </div>
+            )}
+          </div>
+        </div>
+
+        {/* 主导航菜单 */}
         <div className="flex-1 py-4">
           {menuItems.map((item) => (
             <div key={item.id} className="px-4 mb-2">

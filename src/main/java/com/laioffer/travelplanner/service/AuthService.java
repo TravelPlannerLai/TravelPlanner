@@ -74,4 +74,6 @@ public class AuthService {
     public UUID getIdByEmail(String email) {
         return usersRepo.getByEmail(email).userId();
     }
+
+    public String getNameById(UUID userId) {return usersRepo.getByUserId(userId).username();}
 }
