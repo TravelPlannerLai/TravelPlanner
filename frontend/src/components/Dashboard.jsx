@@ -69,7 +69,7 @@ const Dashboard = () => {
               startDate: trip.startDate,
               cityId: trip.cityId,
               tripId: trip.tripId,
-              name: trip.name || `Trip at (${trip.startDate || "Unknown Date"})`, // 自动生成名称
+              name: trip.name || `Trip at ${trip.startDate || "Unknown Date"}`, // 自动生成名称
             };
           })
         );
@@ -111,7 +111,7 @@ const Dashboard = () => {
       cityId: routeData.cityId || null, // 如果有 cityId 则使用它，否则为 null
       tripId: routeData.tripId || null, // 如果有 tripId 则使用它，否则为 null
       places: Array.isArray(routeData.places) ? routeData.places : [], // 确保 places
-      name: routeData.name || `Trip at (${routeData.startDate || new Date().toISOString().split("T")[0]})`, // 自动生成名称
+      name: routeData.name || `Trip at ${routeData.startDate || new Date().toISOString().split("T")[0]}`, // 自动生成名称
     };
     console.log("Saving new route:", newRoute);
     setSavedRoutes([...savedRoutes, newRoute]);
@@ -123,6 +123,25 @@ const Dashboard = () => {
     console.log("城市已更改为:", newCity);
   };
 
+  // 新增：删除路线
+  const handleDeleteRoute = async (routeId, tripId) => {
+    // 可选：后端删除
+    if (tripId) {
+      try {
+        await fetch(`/api/trips/${tripId}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+      } catch (err) {
+        console.error("Failed to delete trip from backend:", err);
+      }
+    }
+    setSavedRoutes((prev) => prev.filter((route) => route.id !== routeId));
+    if (selectedRoute && selectedRoute.id === routeId) {
+      setSelectedRoute(null);
+    }
+};
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* 侧边栏 */}
@@ -132,6 +151,7 @@ const Dashboard = () => {
         savedRoutes={savedRoutes}
         onRouteSelect={handleRouteSelect}
         selectedRoute={selectedRoute}
+        onDeleteRoute={handleDeleteRoute}
       />
 
       {/* 主内容区域 */}

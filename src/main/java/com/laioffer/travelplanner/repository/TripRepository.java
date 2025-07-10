@@ -14,4 +14,7 @@ public interface TripRepository extends ListCrudRepository<TripEntity, UUID> {
 
     List<TripEntity> findByUserId(UUID userId);
 
+    void deleteByTripId(UUID tripId);
+
+
 }

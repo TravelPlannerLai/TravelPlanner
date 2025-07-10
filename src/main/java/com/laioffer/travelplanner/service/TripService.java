@@ -1,6 +1,7 @@
 package com.laioffer.travelplanner.service;
 
 import com.laioffer.travelplanner.entity.TripEntity;
+import com.laioffer.travelplanner.repository.DayPlanRepository;
 import com.laioffer.travelplanner.repository.TripRepository;
 import org.springframework.stereotype.Service;
 
@@ -11,9 +12,11 @@ import java.util.UUID;
 @Service
 public class TripService {
     private final TripRepository tripRepository;
+    private final DayPlanService dayPlanService;
 
-    public TripService(TripRepository tripRepository) {
+    public TripService(TripRepository tripRepository, DayPlanRepository dayPlanRepository, DayPlanService dayPlanService) {
         this.tripRepository = tripRepository;
+        this.dayPlanService = dayPlanService;
     }
 
     public UUID createTrip(UUID userId, UUID cityId, LocalDate startDate, int days, String name) {
@@ -29,5 +32,11 @@ public class TripService {
     public List<TripEntity> getTripsByUserId(UUID userId) {
         return tripRepository.findByUserId(userId);
     }
+
+    public void deleteTrip(UUID tripId) {
+        dayPlanService.deleteByTripId(tripId); // Delete routes
+        tripRepository.deleteByTripId(tripId);     // Delete trip
+    }
+
 
 }
