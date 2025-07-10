@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "./SelectCity.css";
 import { calculateDays } from "../utils/dateUtils";
+import Cookies from "js-cookie";
 
 const stateCityData = {
   Alabama: ["Birmingham", "Montgomery", "Mobile"],
@@ -69,6 +70,21 @@ function SelectCity() {
 
   // 检查是否从主页面跳转过来的
   const isFromMainPage = location.state?.fromMain;
+
+
+  let currentCity = Cookies.get("currentCity") || null;
+  // Reset 'placesByDay' cookie if selectedCity changes from currentCity
+  React.useEffect(() => {
+    console.log("Current city from cookie:", Cookies.get("currentCity"));
+    console.log("Selected city:", selectedCity);
+    let flag = false;
+    if (selectedCity && selectedCity !== currentCity) {
+      // 如果 selectedCity 变化了，清除 placesByDay cookie
+      Cookies.remove("placesByDay");
+      flag = true;
+    }
+    console.log("Flag for placesByDay cookie:", flag);
+  }, [selectedCity, currentCity]);
 
   const handleStateChange = (e) => {
     const state = e.target.value;

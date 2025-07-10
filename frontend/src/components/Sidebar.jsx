@@ -5,9 +5,9 @@ import {
   ChevronRight,
   User,
   Route,
-  Map,
-  MessageSquare,
-  Heart,
+  // Map,
+  // MessageSquare,
+  // Heart,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -69,25 +69,25 @@ const Sidebar = ({
       active: true,
       count: savedRoutes.length,
     },
-    {
-      id: "maps",
-      label: "Explore Maps",
-      icon: Map,
-      type: "menu",
-    },
-    {
-      id: "chat",
-      label: "Travel Assistant",
-      icon: MessageSquare,
-      type: "menu",
-    },
-    {
-      id: "favorites",
-      label: "Favorites",
-      icon: Heart,
-      type: "menu",
-      count: 12,
-    },
+    // {
+    //   id: "maps",
+    //   label: "Explore Maps",
+    //   icon: Map,
+    //   type: "menu",
+    // },
+    // {
+    //   id: "chat",
+    //   label: "Travel Assistant",
+    //   icon: MessageSquare,
+    //   type: "menu",
+    // },
+    // {
+    //   id: "favorites",
+    //   label: "Favorites",
+    //   icon: Heart,
+    //   type: "menu",
+    //   count: 12,
+    // },
   ];
 
   return (
@@ -169,38 +169,38 @@ const Sidebar = ({
           ))}
 
           {/* 保存的路线列表 */}
-          {!collapsed && (
-            <div className="mt-6 px-4">
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">
-            Saved Trips
-          </h4>
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {isLoggedIn ? (
-              savedRoutes.length > 0 ? (
-            savedRoutes.map((route) => (
-              <div
-          key={route.id}
-          onClick={() => onRouteSelect(route)}
-          className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
-              selectedRoute?.id === route.id
-          ? "border-blue-300 bg-blue-50"
-          : "border-gray-200 hover:border-gray-300"
-          }`}
-              >
-          <div className="text-xs text-gray-500 mb-1">
-            <span className="font-semibold">Trip ID:</span> {route.tripId || "N/A"}
-          </div>
-          <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-            <div>
-              {(Array.isArray(route.places) ? route.places : []).map((place, idx) => (
-                <li key={place.place_id || idx}>
-                  {place.visitOrder}: {place.name} {place.planDate} ({place.address || "No address"})
-          
-                </li>
-              ))}
-            </div>
-          </div>
-          {/* Show startDate, days, city name, and plan_date */}
+                {!collapsed && (
+                <div className="mt-6 px-4">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                Saved Trips
+                </h4>
+                <div className="space-y-2 max-h-[31.5rem] overflow-y-auto">
+                {isLoggedIn ? (
+                  savedRoutes.length > 0 ? (
+                savedRoutes.map((route) => (
+                  <div
+                key={route.id}
+                onClick={() => onRouteSelect(route)}
+                className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                  selectedRoute?.id === route.id
+                ? "border-blue-300 bg-blue-50"
+                : "border-gray-200 hover:border-gray-300"
+                }`}
+                  >
+                <div className="text-xs text-gray-500 mb-1">
+                <span className="font-semibold">Trip ID:</span> {route.tripId || "N/A"}
+                </div>
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                <div>
+                  {(Array.isArray(route.places) ? route.places : []).map((place, idx) => (
+                  <li key={place.place_id || idx}>
+                    {place.visitOrder}: {place.name} {place.planDate} ({place.address || "No address"})
+                
+                  </li>
+                  ))}
+                </div>
+                </div>
+                {/* Show startDate, days, city name, and plan_date */}
           <div className="flex items-center text-xs text-gray-600 mb-1">
             {route.startDate && (
               <span className="mr-3">

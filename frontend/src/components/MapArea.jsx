@@ -386,24 +386,8 @@ const MapArea = ({
 }) => {
   const [showAIAssistant, setShowAIAssistant] = useState(true);
   const [currentDay, setCurrentDay] = useState(1);
-  const [placesByDay, setPlacesByDay] = useState(() => {
-    const saved = Cookies.get("placesByDay");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.__city && parsed.__city === currentCity) {
-          delete parsed.__city;
-          return parsed;
-        }
-      } catch {
-        // ignore
-      }
-    }
-    return { 1: [] };
-  });
-  const [waypoints, setWaypoints] = useState(
-    (placesByDay[currentDay] || []).map((p, i) => ({ id: p.place_id || `idx-${i}`, name: p.name, lat: p.lat, lng: p.lng, address: p.address || p.formatted_address || "" }))
-  );
+  const [placesByDay, setPlacesByDay] = useState({ 1: [] });
+  const [waypoints, setWaypoints] = useState([]);
 
   const handleDayChange = (e) => {
     setCurrentDay(Number(e.target.value));
@@ -411,7 +395,123 @@ const MapArea = ({
 
   const [cityCoordinates, setCityCoordinates] = useState({});
   const mapRef = useRef(null);
-  const directionsRendererRef = useRef(null)
+  const directionsRendererRef = useRef(null);
+
+  // Restore placesByDay and waypoints from cookie on mount
+  useEffect(() => {
+    const saved = Cookies.get("placesByDay");
+    if (saved) {
+      console.log("Restoring placesByDay from cookie:", saved);
+      try {
+        const parsed = JSON.parse(saved);
+          // For each day, fetch place details by place_id using Google PlacesService
+          const fetchAll = async () => {
+            const newPlacesByDay = {};
+            const mapInstance = mapRef.current && mapRef.current.getMapInstance && mapRef.current.getMapInstance();
+            if (!window.google || !window.google.maps || !mapInstance) {
+              // Wait for map to be ready
+              setTimeout(fetchAll, 300);
+              return;
+            }
+            const service = new window.google.maps.places.PlacesService(mapInstance);
+            for (const [day, placeIds] of Object.entries(parsed.placeIdsByDay)) {
+              const places = await Promise.all(
+                placeIds.map(
+                  (place_id) =>
+                    new Promise((resolve) => {
+                      service.getDetails(
+                        {
+                          placeId: place_id,
+                          fields: [
+                            "place_id",
+                            "name",
+                            "formatted_address",
+                            "vicinity",
+                            "types",
+                            "geometry",
+                            "opening_hours",
+                            "rating",
+                            "user_ratings_total",
+                            "photos",
+                            "price_level",
+                          ],
+                        },
+                        (details, status) => {
+                          if (
+                            status === window.google.maps.places.PlacesServiceStatus.OK &&
+                            details
+                          ) {
+                            resolve({
+                              name: details.name,
+                              address: details.formatted_address || details.vicinity || "No address",
+                              lat: details.geometry.location.lat(),
+                              lng: details.geometry.location.lng(),
+                              place_id: details.place_id,
+                              types: details.types || [],
+                              price_level: details.price_level ?? null,
+                              rating: details.rating ?? null,
+                              user_ratings_total: details.user_ratings_total ?? null,
+                              opening_hours: details.opening_hours
+                                ? {
+                                    open_now: details.opening_hours.open_now,
+                                    weekday_text: details.opening_hours.weekday_text,
+                                  }
+                                : null,
+                              photo_reference:
+                                details.photos && details.photos.length > 0
+                                  ? details.photos[0].getUrl()
+                                  : null,
+                            });
+                          } else {
+                            resolve(null);
+                          }
+                        }
+                      );
+                    })
+                )
+              );
+              newPlacesByDay[day] = places.filter(Boolean);
+            }
+            setPlacesByDay(newPlacesByDay);
+            console.log("Restored placesByDay:", newPlacesByDay);
+            // Restore waypoints for current day
+            const restored = newPlacesByDay[currentDay] || [];
+            setWaypoints(
+              restored.map((p, i) => ({
+                id: p.place_id || `idx-${i}`,
+                name: p.name,
+                lat: p.lat,
+                lng: p.lng,
+                address: p.address || p.formatted_address || "",
+              }))
+            );
+          };
+          fetchAll();
+      } catch {
+        setPlacesByDay({ 1: [] });
+        setWaypoints([]);
+        console.error("Failed to parse placesByDay from cookie, resetting state.");
+      }
+    } else {
+      setPlacesByDay({ 1: [] });
+      setWaypoints([]);
+      console.log("No saved placesByDay found in cookies, starting fresh.");
+    }
+    // eslint-disable-next-line
+  }, []);
+
+  // Update waypoints when placesByDay or currentDay changes
+  useEffect(() => {
+    setWaypoints(
+      (placesByDay[currentDay] || []).map((p, i) => ({
+        id: p.place_id || `idx-${i}`,
+        name: p.name,
+        lat: p.lat,
+        lng: p.lng,
+        address: p.address || p.formatted_address || "",
+      }))
+    );
+  }, [placesByDay, currentDay]);
 
   useEffect(() => {
     async function getCoordinates() {
@@ -421,7 +521,6 @@ const MapArea = ({
             currentCity,
             GOOGLE_MAPS_API_KEY
           );
-          console.log("Fetched coords:", coords);
           setCityCoordinates((prev) => ({
             ...prev,
             [currentCity]: coords,
@@ -435,36 +534,17 @@ const MapArea = ({
   }, [currentCity, cityCoordinates]);
 
   useEffect(() => {
-    const saved = Cookies.get("placesByDay");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (!parsed.__city || parsed.__city !== currentCity) {
-          Cookies.remove("placesByDay");
-          setPlacesByDay({ 1: [] });
-          setWaypoints([]);
-        }
-      } catch {
-        Cookies.remove("placesByDay");
-        setPlacesByDay({ 1: [] });
-        setWaypoints([]);
-      }
-    } else {
-      // No cookie, always reset state for new city
-      setPlacesByDay({ 1: [] });
-      setWaypoints([]);
-    }
-    // eslint-disable-next-line
-  }, [currentCity]);
-
-  // Save placesByDay to cookies whenever it changes
-  useEffect(() => {
-  Cookies.set(
-    "placesByDay",
-    JSON.stringify({ ...placesByDay, __city: currentCity }),
-    { expires: 7 }
-  );
-}, [placesByDay, currentCity]);
+    // Only save place_ids for each day
+    const placeIdsByDay = {};
+    Object.entries(placesByDay).forEach(([day, places]) => {
+      placeIdsByDay[day] = places.map((p) => p.place_id).filter(Boolean);
+    });
+    Cookies.set(
+      "placesByDay",
+      JSON.stringify({placeIdsByDay}),
+      { expires: 7 }
+    );
+  }, [placesByDay]);
 
 
   useEffect(() => {
