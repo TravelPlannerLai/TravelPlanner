@@ -116,18 +116,6 @@ const TopBar = ({
                 ))}
               </select>
             </div>
-
-            {/* 当前路线信息 */}
-            {selectedRoute && (
-              <div className="px-3 py-2 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-sm font-medium text-blue-800">
-                  {selectedRoute.name}
-                </p>
-                <p className="text-xs text-blue-600">
-                  {selectedRoute.attractions} attractions planned
-                </p>
-              </div>
-            )}
           </div>
 
           {/* 右侧：搜索和操作按钮 */}

@@ -4,12 +4,9 @@ import {
   Minus,
   Compass,
   MapPin,
-  Clock,
-  Star,
   Bot,
   Save,
   Navigation,
-  Info,
 } from "lucide-react";
 import Cookies from "js-cookie";
 import {
@@ -123,30 +120,30 @@ const GoogleMapComponent = React.forwardRef((props, ref) => {
       markersRef.current = [];
 
       // 添加景点标记
-      if (attractions && attractions.length > 0) {
-        attractions.forEach((attraction) => {
-          const marker = new window.google.maps.Marker({
-            position: attraction.coordinates,
-            map: map,
-            title: attraction.name,
-            icon: {
-              url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-                <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="20" cy="20" r="18" fill="white" stroke="#3B82F6" stroke-width="2"/>
-                  <text x="20" y="28" text-anchor="middle" font-size="16">${attraction.icon}</text>
-                </svg>
-              `)}`,
-              scaledSize: new window.google.maps.Size(40, 40),
-            },
-          });
+      // if (attractions && attractions.length > 0) {
+      //   attractions.forEach((attraction) => {
+      //     const marker = new window.google.maps.Marker({
+      //       position: attraction.coordinates,
+      //       map: map,
+      //       title: attraction.name,
+      //       icon: {
+      //         url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+      //           <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+      //             <circle cx="20" cy="20" r="18" fill="white" stroke="#3B82F6" stroke-width="2"/>
+      //             <text x="20" y="28" text-anchor="middle" font-size="16">${attraction.icon}</text>
+      //           </svg>
+      //         `)}`,
+      //         scaledSize: new window.google.maps.Size(40, 40),
+      //       },
+      //     });
 
-          marker.addListener("click", () => {
-            onAttractionClick(attraction);
-          });
+      //     marker.addListener("click", () => {
+      //       onAttractionClick(attraction);
+      //     });
 
-          markersRef.current.push(marker);
-        });
-      }
+      //     markersRef.current.push(marker);
+      //   });
+      // }
       if (places && places.length > 0) {
         places.forEach((place, idx) => {
           const marker = new window.google.maps.Marker({
@@ -341,17 +338,26 @@ const GoogleMapComponent = React.forwardRef((props, ref) => {
 
     
 
-    // 检查 Google Maps API 是否已加载
-    if (window.google && window.google.maps) {
-      initMap();
+    // Before appending the script
+    if (!window.google || !window.google.maps) {
+      if (!document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]')) {
+        const script = document.createElement("script");
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+        script.async = true;
+        script.defer = true;
+        script.onload = initMap;
+        document.head.appendChild(script);
+      } else {
+        // If script exists but google.maps is not ready, wait and retry
+        const interval = setInterval(() => {
+          if (window.google && window.google.maps) {
+            clearInterval(interval);
+            initMap();
+          }
+        }, 100);
+      }
     } else {
-      // 加载 Google Maps API
-      const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      script.onload = initMap;
-      document.head.appendChild(script);
+      initMap();
     }
   }, [
     currentCity,
@@ -376,39 +382,136 @@ const MapArea = ({
   selectedDays,
   selectedRoute,
   onSaveRoute,
-  tripDays = 5,
+  tripDays = 10,
 }) => {
-  const [selectedAttraction, setSelectedAttraction] = useState(null);
   const [showAIAssistant, setShowAIAssistant] = useState(true);
-  const [routeName, setRouteName] = useState("");
   const [currentDay, setCurrentDay] = useState(1);
-  const [placesByDay, setPlacesByDay] = useState(() => {
-    const saved = Cookies.get("placesByDay");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.__city && parsed.__city === currentCity) {
-          delete parsed.__city;
-          return parsed;
-        }
-      } catch {
-        // ignore
-      }
-    }
-    return { 1: [] };
-  });
-  const [waypoints, setWaypoints] = useState(
-    (placesByDay[currentDay] || []).map((p, i) => ({ id: p.place_id || `idx-${i}`, name: p.name, lat: p.lat, lng: p.lng, address: p.address || p.formatted_address || "" }))
-  );
+  const [placesByDay, setPlacesByDay] = useState({ 1: [] });
+  const [waypoints, setWaypoints] = useState([]);
 
   const handleDayChange = (e) => {
     setCurrentDay(Number(e.target.value));
-    setSelectedAttraction(null);
   };
 
   const [cityCoordinates, setCityCoordinates] = useState({});
   const mapRef = useRef(null);
-  const directionsRendererRef = useRef(null)
+  const directionsRendererRef = useRef(null);
+
+  // Restore placesByDay and waypoints from cookie on mount
+  useEffect(() => {
+    const saved = Cookies.get("placesByDay");
+    if (saved) {
+      console.log("Restoring placesByDay from cookie:", saved);
+      try {
+        const parsed = JSON.parse(saved);
+          // For each day, fetch place details by place_id using Google PlacesService
+          const fetchAll = async () => {
+            const newPlacesByDay = {};
+            const mapInstance = mapRef.current && mapRef.current.getMapInstance && mapRef.current.getMapInstance();
+            if (!window.google || !window.google.maps || !mapInstance) {
+              // Wait for map to be ready
+              setTimeout(fetchAll, 300);
+              return;
+            }
+            const service = new window.google.maps.places.PlacesService(mapInstance);
+            for (const [day, placeIds] of Object.entries(parsed.placeIdsByDay)) {
+              const places = await Promise.all(
+                placeIds.map(
+                  (place_id) =>
+                    new Promise((resolve) => {
+                      service.getDetails(
+                        {
+                          placeId: place_id,
+                          fields: [
+                            "place_id",
+                            "name",
+                            "formatted_address",
+                            "vicinity",
+                            "types",
+                            "geometry",
+                            "opening_hours",
+                            "rating",
+                            "user_ratings_total",
+                            "photos",
+                            "price_level",
+                          ],
+                        },
+                        (details, status) => {
+                          if (
+                            status === window.google.maps.places.PlacesServiceStatus.OK &&
+                            details
+                          ) {
+                            resolve({
+                              name: details.name,
+                              address: details.formatted_address || details.vicinity || "No address",
+                              lat: details.geometry.location.lat(),
+                              lng: details.geometry.location.lng(),
+                              place_id: details.place_id,
+                              types: details.types || [],
+                              price_level: details.price_level ?? null,
+                              rating: details.rating ?? null,
+                              user_ratings_total: details.user_ratings_total ?? null,
+                              opening_hours: details.opening_hours
+                                ? {
+                                    open_now: details.opening_hours.open_now,
+                                    weekday_text: details.opening_hours.weekday_text,
+                                  }
+                                : null,
+                              photo_reference:
+                                details.photos && details.photos.length > 0
+                                  ? details.photos[0].getUrl()
+                                  : null,
+                            });
+                          } else {
+                            resolve(null);
+                          }
+                        }
+                      );
+                    })
+                )
+              );
+              newPlacesByDay[day] = places.filter(Boolean);
+            }
+            setPlacesByDay(newPlacesByDay);
+            console.log("Restored placesByDay:", newPlacesByDay);
+            // Restore waypoints for current day
+            const restored = newPlacesByDay[currentDay] || [];
+            setWaypoints(
+              restored.map((p, i) => ({
+                id: p.place_id || `idx-${i}`,
+                name: p.name,
+                lat: p.lat,
+                lng: p.lng,
+                address: p.address || p.formatted_address || "",
+              }))
+            );
+          };
+          fetchAll();
+      } catch {
+        setPlacesByDay({ 1: [] });
+        setWaypoints([]);
+        console.error("Failed to parse placesByDay from cookie, resetting state.");
+      }
+    } else {
+      setPlacesByDay({ 1: [] });
+      setWaypoints([]);
+      console.log("No saved placesByDay found in cookies, starting fresh.");
+    }
+    // eslint-disable-next-line
+  }, []);
+
+  // Update waypoints when placesByDay or currentDay changes
+  useEffect(() => {
+    setWaypoints(
+      (placesByDay[currentDay] || []).map((p, i) => ({
+        id: p.place_id || `idx-${i}`,
+        name: p.name,
+        lat: p.lat,
+        lng: p.lng,
+        address: p.address || p.formatted_address || "",
+      }))
+    );
+  }, [placesByDay, currentDay]);
 
   useEffect(() => {
     async function getCoordinates() {
@@ -431,36 +534,17 @@ const MapArea = ({
   }, [currentCity, cityCoordinates]);
 
   useEffect(() => {
-    const saved = Cookies.get("placesByDay");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (!parsed.__city || parsed.__city !== currentCity) {
-          Cookies.remove("placesByDay");
-          setPlacesByDay({ 1: [] });
-          setWaypoints([]);
-        }
-      } catch {
-        Cookies.remove("placesByDay");
-        setPlacesByDay({ 1: [] });
-        setWaypoints([]);
-      }
-    } else {
-      // No cookie, always reset state for new city
-      setPlacesByDay({ 1: [] });
-      setWaypoints([]);
-    }
-    // eslint-disable-next-line
-  }, [currentCity]);
-
-  // Save placesByDay to cookies whenever it changes
-  useEffect(() => {
-  Cookies.set(
-    "placesByDay",
-    JSON.stringify({ ...placesByDay, __city: currentCity }),
-    { expires: 7 }
-  );
-}, [placesByDay, currentCity]);
+    // Only save place_ids for each day
+    const placeIdsByDay = {};
+    Object.entries(placesByDay).forEach(([day, places]) => {
+      placeIdsByDay[day] = places.map((p) => p.place_id).filter(Boolean);
+    });
+    Cookies.set(
+      "placesByDay",
+      JSON.stringify({placeIdsByDay}),
+      { expires: 7 }
+    );
+  }, [placesByDay]);
 
 
   useEffect(() => {
@@ -583,7 +667,7 @@ const MapArea = ({
 
   const handleSaveCurrentRoute = async () => {
     // 统计有图钉的天数和天号
-    const daysWithPins = Object.entries(placesByDay).filter(
+    const daysWithPins = [[currentDay, waypoints]].filter(
       ([day, pins]) => pins && pins.length > 0
     );
     console.log("Days with pins:", daysWithPins);
@@ -645,10 +729,10 @@ const MapArea = ({
       const planDate = planDateObj.toISOString().slice(0, 10);
       // 组装 pois
       const pois = pins
-        .filter((p) => p.place_id || p.placeId)
+        .filter((p) => p.id)
         .map((p, idx) => ({
           cityId,
-          placeId: p.place_id || p.placeId,
+          placeId: p.id,
           name: p.name,
           formattedAddress: p.address || p.formattedAddress || "",
           types: p.types || [],
@@ -678,6 +762,22 @@ const MapArea = ({
         if (!planRes.ok) {
           throw new Error("保存 day plan 失败");
         }
+        console.log("POIS to save:", pois);
+        onSaveRoute({
+          days: dayNumber,
+          places: pois.map((p) => ({
+            name: p.name,
+            lat: p.lat,
+            lng: p.lng,
+            address: p.formattedAddress || p.address || "",
+            visitOrder: p.visitOrder,
+            placeId: p.placeId || p.place_id,
+            planDate: p.planDate || planDate,
+          })),
+          tripId,
+          cityId,
+          startDate,
+        });
       } catch (e) {
         alert(`保存第${dayNumber}天路线失败`);
         return;
@@ -690,8 +790,6 @@ const MapArea = ({
 
   const handleGenereteRoute = () => {
     const places = waypoints;
-    console.log("places for route:", places);
-    console.log("correct", placesByDay[currentDay]);
     if (!window.google || !mapRef.current || places.length < 2) {
       alert("Please select at least two places to generate a route.");
       return;
@@ -703,12 +801,20 @@ const MapArea = ({
       directionsRendererRef.current.setMap(null);
       directionsRendererRef.current = null;
     }
+    if (window.arrowPolylines) {
+      window.arrowPolylines.forEach((poly) => poly.setMap(null));
+      window.arrowPolylines = [];
+    }
 
     const directionsService = new window.google.maps.DirectionsService();
     const directionsRenderer = new window.google.maps.DirectionsRenderer({
       map: map,
       suppressMarkers: true,
       preserveViewport: true,
+      polylineOptions: {
+        strokeColor: "#2563eb",
+        strokeWeight: 5,
+      },
     });
     directionsRendererRef.current = directionsRenderer;
 
@@ -723,16 +829,79 @@ const MapArea = ({
         destination: { lat: places[places.length - 1].lat, lng: places[places.length - 1].lng },
         waypoints: wp,
         travelMode: window.google.maps.TravelMode.DRIVING,
+        provideRouteAlternatives: false, // Do not show alternative routes
       },
       (result, status) => {
         if (status === window.google.maps.DirectionsStatus.OK) {
-          directionsRenderer.setDirections(result);
+          // Only show the main route in the default renderer
+          directionsRenderer.setDirections({
+            ...result,
+            routes: [result.routes[0]],
+          });
+
+          // Remove previous arrow polylines
+          if (window.arrowPolylines) {
+            window.arrowPolylines.forEach((poly) => poly.setMap(null));
+          }
+          window.arrowPolylines = [];
+
+          // Define colors for up to 8 segments
+          const segmentColors = [
+            "#2563eb", // blue
+            "#f59e42", // orange
+            "#10b981", // green
+            "#f43f5e", // red
+            "#a855f7", // purple
+            "#eab308", // yellow
+            "#6366f1", // indigo
+            "#14b8a6", // teal
+          ];
+
+          // Draw arrows for each segment between waypoints for the main route
+          const route = result.routes[0];
+          if (route && route.legs && route.legs.length > 0) {
+            for (let i = 0; i < route.legs.length; i++) {
+              const leg = route.legs[i];
+              let segmentPath = [];
+              leg.steps.forEach((step) => {
+                if (step.path && step.path.length > 0) {
+                  segmentPath = segmentPath.concat(step.path);
+                }
+              });
+              if (segmentPath.length > 1) {
+                const color = segmentColors[i % segmentColors.length];
+                const arrowSymbol = {
+                  path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                  scale: 1.5,
+                  strokeColor: "#fff",
+                  fillColor: "#fff",
+                  fillOpacity: 1,
+                };
+                const arrowPolyline = new window.google.maps.Polyline({
+                  path: segmentPath,
+                  icons: [
+                    {
+                      icon: arrowSymbol,
+                      offset: "0%",
+                      repeat: "60px",
+                    },
+                  ],
+                  strokeColor: color,
+                  strokeWeight: 5,
+                  strokeOpacity: 0.9,
+                  map: map,
+                  zIndex: 2,
+                });
+                window.arrowPolylines.push(arrowPolyline);
+              }
+            }
+          }
         } else {
           alert("Directions request failed: " + status);
         }
       }
     );
-  };  
+  };
   // API Key 检查
   if (!GOOGLE_MAPS_API_KEY) {
     return (
@@ -757,7 +926,6 @@ const MapArea = ({
           ref={mapRef}
           currentCity={currentCity}
           attractions={attractions}
-          onAttractionClick={setSelectedAttraction}
           places={placesByDay[currentDay] || []}
           addPlace={addPlace}
           deletePlace={deletePlace}
@@ -797,89 +965,31 @@ const MapArea = ({
           </button>
         </div>
 
-        {/* 景点详情面板 */}
-        {selectedAttraction && (
-          <div className="absolute top-20 left-4 bg-white rounded-lg shadow-xl p-4 max-w-sm z-10">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center space-x-3">
-                <span className="text-2xl">{selectedAttraction.icon}</span>
-                <div>
-                  <h3 className="font-bold text-gray-800">
-                    {selectedAttraction.name}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {selectedAttraction.category}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedAttraction(null)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-1">
-                  <Star
-                    size={16}
-                    className="text-yellow-500"
-                    fill="currentColor"
-                  />
-                  <span className="font-medium">
-                    {selectedAttraction.rating}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-1 text-gray-600">
-                  <Clock size={16} />
-                  <span className="text-sm">
-                    {selectedAttraction.visitTime}
-                  </span>
-                </div>
-              </div>
-
-              <p className="text-sm text-gray-700">
-                {selectedAttraction.description}
-              </p>
-
-              <div className="flex space-x-2">
-                <button className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium">
-                  Add to Route
-                </button>
-                <button className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
-                  <Info size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        {/* 可拖拽的景点列表 */}
-        <div className="absolute bottom-72 left-4 bg-white rounded-lg shadow-xl p-2 max-w-xs w-56 z-10">
-          <h3 className="font-bold text-gray-800 mb-3 flex items-center">
-            <MapPin className="mr-2 text-blue-600" size={20} />
-            Order your Waypoints
-          </h3>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={waypoints.map((p) => p.id)}
-              strategy={verticalListSortingStrategy}
+          {/* 可拖拽的景点列表 */}
+          <div className="absolute bottom-52 left-4 bg-white rounded-lg shadow-xl p-2 max-w-xs w-56 z-10 text-[11px]">
+            <h3 className="font-bold text-gray-800 mb-3 flex items-center text-[11px]" >
+              <MapPin className="mr-2 text-blue-600" size={15} />
+              Drag below waypoints to reorder
+            </h3>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
             >
-              <ul className="space-y-2">
-                {waypoints.map((item) => (
-                  <SortableItem key={item.id} id={item.id} name={item.name} />
-                ))}
-              </ul>
-            </SortableContext>
-          </DndContext>
-        </div>
-                
-        {/* 路线规划工具 */}
+              <SortableContext
+                items={waypoints.map((p) => p.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <ul className="space-y-2">
+            {waypoints.map((item) => (
+              <SortableItem key={item.id} id={item.id} name={item.name} />
+            ))}
+                </ul>
+              </SortableContext>
+            </DndContext>
+          </div>
+            
+          {/* 路线规划工具 */}
         <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-xl p-4 max-w-md z-10">
           <h3 className="font-bold text-gray-800 mb-3 flex items-center">
             <MapPin className="mr-2 text-blue-600" size={20} />
@@ -905,13 +1015,6 @@ const MapArea = ({
               <span className="font-medium">{attractions.length} places</span>
             </div>
             <div className="border-t pt-3">
-              <input
-                type="text"
-                placeholder="Name your route..."
-                value={routeName}
-                onChange={(e) => setRouteName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
-              />
               <div className="flex space-x-2">
                 <button
                   onClick={handleSaveCurrentRoute}

@@ -5,11 +5,9 @@ import {
   ChevronRight,
   User,
   Route,
-  Map,
-  MessageSquare,
-  Heart,
-  Clock,
-  MapPin,
+  // Map,
+  // MessageSquare,
+  // Heart,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -71,25 +69,25 @@ const Sidebar = ({
       active: true,
       count: savedRoutes.length,
     },
-    {
-      id: "maps",
-      label: "Explore Maps",
-      icon: Map,
-      type: "menu",
-    },
-    {
-      id: "chat",
-      label: "Travel Assistant",
-      icon: MessageSquare,
-      type: "menu",
-    },
-    {
-      id: "favorites",
-      label: "Favorites",
-      icon: Heart,
-      type: "menu",
-      count: 12,
-    },
+    // {
+    //   id: "maps",
+    //   label: "Explore Maps",
+    //   icon: Map,
+    //   type: "menu",
+    // },
+    // {
+    //   id: "chat",
+    //   label: "Travel Assistant",
+    //   icon: MessageSquare,
+    //   type: "menu",
+    // },
+    // {
+    //   id: "favorites",
+    //   label: "Favorites",
+    //   icon: Heart,
+    //   type: "menu",
+    //   count: 12,
+    // },
   ];
 
   return (
@@ -134,96 +132,114 @@ const Sidebar = ({
       </div>
 
       {/* 主导航菜单 */}
-      <div className="flex-1 py-4">
-        {menuItems.map((item) => (
-          <div key={item.id} className="px-4 mb-2">
-            <button
-              className={`w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group ${
-                item.active
-                  ? "bg-blue-50 text-blue-600 border-r-2 border-blue-500"
-                  : "text-gray-600"
-              }`}
-            >
-              <div className="flex items-center">
-                <item.icon
-                  size={20}
-                  className={`${
-                    item.active ? "text-blue-600" : "text-gray-500"
-                  } group-hover:text-blue-600`}
-                />
-                {!collapsed && (
-                  <span className="ml-3 font-medium">{item.label}</span>
-                )}
-              </div>
-              {!collapsed && item.count && (
-                <span
-                  className={`px-2 py-1 text-xs rounded-full ${
-                    item.active
-                      ? "bg-blue-100 text-blue-600"
-                      : "bg-gray-100 text-gray-600"
-                  }`}
-                >
-                  {item.count}
-                </span>
-              )}
-            </button>
-          </div>
-        ))}
-
-        {/* 保存的路线列表 */}
-        {!collapsed && (
-          <div className="mt-6 px-4">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3">
-              Saved Routes
-            </h4>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {isLoggedIn ? (
-                savedRoutes.length > 0 ? (
-                  savedRoutes.map((route) => (
-                    <div
-                      key={route.id}
-                      onClick={() => onRouteSelect(route)}
-                      className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
-                        selectedRoute?.id === route.id
-                          ? "border-blue-300 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      <h5 className="font-medium text-gray-800 text-sm mb-1">
-                        {route.name}
-                      </h5>
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <div className="flex items-center">
-                          <Clock size={12} className="mr-1" />
-                          {route.days} days
-                        </div>
-                        <div className="flex items-center">
-                          <MapPin size={12} className="mr-1" />
-                          {route.attractions} spots
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-gray-400 text-sm">
-                    No saved routes yet.
-                  </div>
-                )
-              ) : (
-                <div className="text-gray-400 text-sm">
-                  Please{" "}
-                  <Link to="/login" className="text-blue-500 underline">
-                    log in
-                  </Link>{" "}
-                  to save your routes
-                </div>
+        <div className="flex-1 py-4">
+          {menuItems.map((item) => (
+            <div key={item.id} className="px-4 mb-2">
+          <button
+            className={`w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group ${
+              item.active
+            ? "bg-blue-50 text-blue-600 border-r-2 border-blue-500"
+            : "text-gray-600"
+            }`}
+          >
+            <div className="flex items-center">
+              <item.icon
+            size={20}
+            className={`${
+              item.active ? "text-blue-600" : "text-gray-500"
+            } group-hover:text-blue-600`}
+              />
+              {!collapsed && (
+            <span className="ml-3 font-medium">{item.label}</span>
               )}
             </div>
-          </div>
-        )}
-      </div>
+            {!collapsed && item.count && (
+              <span
+            className={`px-2 py-1 text-xs rounded-full ${
+              item.active
+          ? "bg-blue-100 text-blue-600"
+          : "bg-gray-100 text-gray-600"
+            }`}
+              >
+            {item.count}
+              </span>
+            )}
+          </button>
+            </div>
+          ))}
 
-      {/* 底部设置和登出 */}
+          {/* 保存的路线列表 */}
+                {!collapsed && (
+                <div className="mt-6 px-4">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                Saved Trips
+                </h4>
+                <div className="space-y-2 max-h-[31.5rem] overflow-y-auto">
+                {isLoggedIn ? (
+                  savedRoutes.length > 0 ? (
+                savedRoutes.map((route) => (
+                  <div
+                key={route.id}
+                onClick={() => onRouteSelect(route)}
+                className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                  selectedRoute?.id === route.id
+                ? "border-blue-300 bg-blue-50"
+                : "border-gray-200 hover:border-gray-300"
+                }`}
+                  >
+                <div className="text-xs text-gray-500 mb-1">
+                <span className="font-semibold">Trip ID:</span> {route.tripId || "N/A"}
+                </div>
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                <div>
+                  {(Array.isArray(route.places) ? route.places : []).map((place, idx) => (
+                  <li key={place.place_id || idx}>
+                    {place.visitOrder}: {place.name} {place.planDate} ({place.address || "No address"})
+                
+                  </li>
+                  ))}
+                </div>
+                </div>
+                {/* Show startDate, days, city name, and plan_date */}
+          <div className="flex items-center text-xs text-gray-600 mb-1">
+            {route.startDate && (
+              <span className="mr-3">
+          <span className="font-semibold">Start:</span> {route.startDate}
+              </span>
+            )}
+            {route.days && (
+              <span className="mr-3">
+          <span className="font-semibold">Days:</span> {route.days}
+              </span>
+            )}
+            {route.cityId && (
+              <span className="mr-3">
+          <span className="font-semibold">City:</span> {route.cityId}
+              </span>
+            )}
+          </div>
+              </div>
+            ))
+              ) : (
+            <div className="text-gray-400 text-sm">
+              No saved routes yet.
+            </div>
+              )
+            ) : (
+              <div className="text-gray-400 text-sm">
+            Please{" "}
+            <Link to="/login" className="text-blue-500 underline">
+              log in
+            </Link>{" "}
+            to save your routes
+              </div>
+            )}
+          </div>
+            </div>
+          )}
+        </div>
+
+        {/* 底部设置和登出 */}
       <div className="border-t border-gray-200 p-4 space-y-2">
         {/* Settings 按钮 */}
         <button className="w-full flex items-center p-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
