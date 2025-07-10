@@ -34,7 +34,8 @@ public class TripController {
                 userId,
                 request.cityId(),
                 request.startDate(),
-                request.days()
+                request.days(),
+                request.name()
         );
     }
 

@@ -69,6 +69,7 @@ const Dashboard = () => {
               startDate: trip.startDate,
               cityId: trip.cityId,
               tripId: trip.tripId,
+              name: trip.name || `Trip at (${trip.startDate || "Unknown Date"})`, // 自动生成名称
             };
           })
         );
@@ -110,6 +111,7 @@ const Dashboard = () => {
       cityId: routeData.cityId || null, // 如果有 cityId 则使用它，否则为 null
       tripId: routeData.tripId || null, // 如果有 tripId 则使用它，否则为 null
       places: Array.isArray(routeData.places) ? routeData.places : [], // 确保 places
+      name: routeData.name || `Trip at (${routeData.startDate || new Date().toISOString().split("T")[0]})`, // 自动生成名称
     };
     console.log("Saving new route:", newRoute);
     setSavedRoutes([...savedRoutes, newRoute]);

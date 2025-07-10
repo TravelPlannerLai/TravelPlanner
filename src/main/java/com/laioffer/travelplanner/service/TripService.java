@@ -16,8 +16,8 @@ public class TripService {
         this.tripRepository = tripRepository;
     }
 
-    public UUID createTrip(UUID userId, UUID cityId, LocalDate startDate, int days) {
-        TripEntity newTrip = new TripEntity(null, userId, cityId, startDate, days);
+    public UUID createTrip(UUID userId, UUID cityId, LocalDate startDate, int days, String name) {
+        TripEntity newTrip = new TripEntity(null, userId, cityId, startDate, days, name);
         TripEntity savedTrip = tripRepository.save(newTrip);
         return savedTrip.tripId();
     }

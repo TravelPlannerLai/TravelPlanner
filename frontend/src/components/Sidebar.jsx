@@ -45,6 +45,7 @@ const Sidebar = ({
     const fetchUsername = async () => {
       try {
         const response = await fetch("/api/users/username", {
+          credentials: "include", // 确保发送 cookies
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -85,6 +86,7 @@ const Sidebar = ({
       localStorage.removeItem("selectedCity");
 
       // 清除 cookies
+      Cookies.remove("tripId");
       Cookies.remove("currentCity");
       Cookies.remove("placesByDay");
 
@@ -233,17 +235,21 @@ const Sidebar = ({
                 }`}
                   >
                 <div className="text-xs text-gray-500 mb-1">
-                <span className="font-semibold">Trip ID:</span> {route.tripId || "N/A"}
-                </div>
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                <div>
-                  {(Array.isArray(route.places) ? route.places : []).map((place, idx) => (
-                  <li key={place.place_id || idx}>
-                    {place.visitOrder}: {place.name} {place.planDate} ({place.address || "No address"})
-                
-                  </li>
+                <span className="font-semibold">Trip Name:</span> {route.name || "No Name"}
+                <ul className="ml-4 mt-1 space-y-1 list-decimal">
+                  {route.places.map((place, idx) => (
+                    <li key={place.place_id || idx} className="pl-1 text-left">
+                        <span className="font-semibold">#{place.visitOrder}</span>
+                        {place.planDate && (
+                          <span className="ml-2 text-gray-400">[{place.planDate}]</span>
+                        )}
+                        <span className="ml-2">{place.name}</span>
+                        <span className="ml-2 text-gray-400">
+                          ({place.address || "No address"})
+                        </span>
+                    </li>
                   ))}
-                </div>
+                </ul>
                 </div>
                 {/* Show startDate, days, city name, and plan_date */}
           <div className="flex items-center text-xs text-gray-600 mb-1">
@@ -255,11 +261,6 @@ const Sidebar = ({
             {route.days && (
               <span className="mr-3">
           <span className="font-semibold">Days:</span> {route.days}
-              </span>
-            )}
-            {route.cityId && (
-              <span className="mr-3">
-          <span className="font-semibold">City:</span> {route.cityId}
               </span>
             )}
           </div>
