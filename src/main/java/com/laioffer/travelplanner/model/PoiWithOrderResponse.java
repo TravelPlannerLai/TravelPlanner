@@ -16,5 +16,6 @@ public record PoiWithOrderResponse(
         JsonNode types,
         String photoReference,
         JsonNode openingHours,
-        int visitOrder
+        int visitOrder,
+        String place_id
 ) {}

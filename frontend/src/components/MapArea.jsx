@@ -417,6 +417,11 @@ const MapArea = ({
               newPlacesByDay[day] = places.filter(Boolean);
             }
             setPlacesByDay(newPlacesByDay);
+            // Set currentDay to the first day with places
+            const days = Object.keys(newPlacesByDay);
+            if (days.length > 0) {
+              setCurrentDay(days[0]);
+            }
             console.log("Restored placesByDay:", newPlacesByDay);
             // Restore waypoints for current day
             const restored = newPlacesByDay[currentDay] || [];
@@ -433,11 +438,13 @@ const MapArea = ({
           fetchAll();
       } catch {
         setPlacesByDay({ 1: [] });
+        setCurrentDay(1);
         setWaypoints([]);
         console.error("Failed to parse placesByDay from cookie, resetting state.");
       }
     } else {
       setPlacesByDay({ 1: [] });
+      setCurrentDay(1);
       setWaypoints([]);
       console.log("No saved placesByDay found in cookies, starting fresh.");
     }

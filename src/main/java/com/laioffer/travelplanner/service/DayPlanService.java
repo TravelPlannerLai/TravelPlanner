@@ -151,7 +151,8 @@ public class DayPlanService {
                                 typesNode,
                                 poi.photoReference(),
                                 openingHours,
-                                route.visitOrder()
+                                route.visitOrder(),
+                                poi.placeId()
                         );
                     })
                     .collect(Collectors.toList());

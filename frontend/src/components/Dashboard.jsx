@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Cookies from "js-cookie";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
 import MapArea from "./MapArea";
 import { calculateDays } from "../utils/dateUtils";
+
 
 const Dashboard = () => {
   // 全局状态管理
@@ -17,6 +18,7 @@ const Dashboard = () => {
   const [savedRoutes, setSavedRoutes] = useState([]);
 
   const location = useLocation();
+  const navigate = useNavigate();
 
   // 监听从城市选择页面返回的数据
   useEffect(() => {
@@ -61,6 +63,7 @@ const Dashboard = () => {
                 });
               });
             });
+            console.log("Trip places:", places);
 
             return {
               ...trip,
@@ -97,9 +100,40 @@ const Dashboard = () => {
   };
 
   // 处理路线选择
-  const handleRouteSelect = (route) => {
+  const handleRouteSelect = async (route) => {
     setSelectedRoute(route);
     setSelectedDays(`${route.days}days`);
+    
+    console.log("route.places:", route.places);
+    // Build placeIdsByDay from route.places
+    const placeIdsByDay = (route.places || []).reduce((acc, place) => {
+      const day = place.planDate || "unknown";
+      const id = place.place_id || place.poiId;
+      if (id) {
+        if (!acc[day]) acc[day] = [];
+        acc[day].push(place.place_id);
+      }
+      return acc;
+    }, {});
+
+    // Set the cookie
+    Cookies.set(
+      "placesByDay",
+      JSON.stringify({ placeIdsByDay }),
+      { expires: 7 }
+    );
+    console.log("Places by day set in cookies:", placeIdsByDay);
+    // Set tripId and currentCity cookies
+    if (route.tripId) {
+      Cookies.set("tripId", route.tripId, { expires: 7 });
+      console.log("Trip ID set in cookies:", route.tripId);
+    }
+
+    const city = await fetch(`/api/city/id/${route.cityId}`,{ credentials: "include" });
+    const cityData = await city.json();
+    setCurrentCity(cityData.name || "Unknown City");
+    Cookies.set("currentCity", cityData.name || "Unknown City", { expires: 7 });
+    console.log("城市已设置为:", cityData.name || "Unknown City");
   };
 
   // 处理新路线保存
@@ -137,9 +171,22 @@ const Dashboard = () => {
       }
     }
     setSavedRoutes((prev) => prev.filter((route) => route.id !== routeId));
-    if (selectedRoute && selectedRoute.id === routeId) {
+    if (selectedRoute?.id === routeId) {
       setSelectedRoute(null);
     }
+    // 检查 cookie 中的 tripId 是否等于被删除的 tripId
+    const cookieTripId = Cookies.get("tripId");
+    if (cookieTripId && cookieTripId === tripId) {
+      Cookies.remove("tripId");
+      navigate("/select_city", {
+        state: {
+          fromMain: true,
+          currentCity: Cookies.get("currentCity") || "Paris",
+        },
+      });
+      return;
+    }
+    window.location.reload();
 };
 
   return (
