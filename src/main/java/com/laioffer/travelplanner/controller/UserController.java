@@ -9,6 +9,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 
 import java.util.*;
 
@@ -79,6 +81,20 @@ public class UserController {
         }
         return ResponseEntity.ok(
                 Map.of("status", 200, "users", list)
+        );
+    }
+
+    @GetMapping("/api/user/me")
+    public Map<String, Object> getCurrentUser(@AuthenticationPrincipal User user) {
+        // findByEmail 返回 Optional<UsersEntity>
+        Optional<UsersEntity> optionalEntity = usersRepo.findByEmail(user.getUsername());
+        UsersEntity entity = optionalEntity.orElse(null);
+        if (entity == null) {
+            return Map.of("error", "User not found");
+        }
+        return Map.of(
+            "username", entity.username(),
+            "email", entity.email()
         );
     }
 }
