@@ -28,6 +28,9 @@ const Sidebar = ({
   const isLoggedIn =
     !!localStorage.getItem("userToken") || !!localStorage.getItem("userData");
 
+  const username = localStorage.getItem("username");
+  const email = localStorage.getItem("email");
+
   // 添加调试用的点击处理函数
   const handleToggleClick = (e) => {
     e.preventDefault();
@@ -86,6 +89,7 @@ const Sidebar = ({
       localStorage.removeItem("userToken");
       localStorage.removeItem("userData");
       localStorage.removeItem("selectedCity");
+      localStorage.removeItem("username"); // 登出时清除 username
 
       // 清除 cookies
       Cookies.remove("tripId");
@@ -162,11 +166,21 @@ const Sidebar = ({
           </div>
         </div>
 
-        {/* 用户信息 */}
-        <div className="p-4 border-b border-gray-100">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-          <User size={20} className="text-white" />
+
+      {/* 用户信息 */}
+      <div className="p-4 border-b border-gray-100">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+            <User size={20} className="text-white" />
+          </div>
+          {!collapsed && (
+            <div className="flex flex-col items-start">
+              <h3 className="font-semibold text-gray-800">
+                {isLoggedIn && username ? username : "Travel Explorer"}
+              </h3>
+              <p className="text-sm text-gray-500">
+                {isLoggedIn && email ? email : "Guest Mode"}
+              </p>
             </div>
             {!collapsed && (
           <div>
@@ -180,6 +194,7 @@ const Sidebar = ({
             )}
           </div>
         </div>
+
 
         {/* 主导航菜单 */}
         <div className="flex-1 py-4">
@@ -293,28 +308,28 @@ const Sidebar = ({
           <span className="font-semibold">Days:</span> {route.days}
           </span>
           </div>
-              </div>
-            ))
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-gray-400 text-sm">
+                    No saved routes yet.
+                  </div>
+                )
               ) : (
-            <div className="text-gray-400 text-sm">
-              No saved routes yet.
+                <div className="text-gray-400 text-sm">
+                  Please{" "}
+                  <Link to="/login" className="text-blue-500 underline">
+                    log in
+                  </Link>{" "}
+                  to save your routes
+                </div>
+              )}
             </div>
-              )
-            ) : (
-              <div className="text-gray-400 text-sm">
-            Please{" "}
-            <Link to="/login" className="text-blue-500 underline">
-              log in
-            </Link>{" "}
-            to save your routes
-              </div>
-            )}
           </div>
-            </div>
-          )}
-        </div>
+        )}
+      </div>
 
-        {/* 底部设置和登出 */}
+      {/* 底部设置和登出 */}
       <div className="border-t border-gray-200 p-4 space-y-2">
         {/* Settings 按钮 */}
         <button className="w-full flex items-center p-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
