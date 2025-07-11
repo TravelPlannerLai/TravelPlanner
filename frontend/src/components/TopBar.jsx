@@ -21,6 +21,22 @@ const TopBar = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const handleShare = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href)
+        .then(() => {
+          setShareCopied(true);
+          setTimeout(() => setShareCopied(false), 1500);
+        })
+        .catch((err) => {
+          alert("Failed to copy link: " + err);
+        });
+    } else {
+      alert("Clipboard API not supported in this browser.");
+    }
+  };
 
   // 处理城市按钮点击
   const handleCityClick = () => {
@@ -129,9 +145,17 @@ const TopBar = ({
             </button>
 
             {/* 分享按钮 */}
-            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2 transition-colors">
+            <button
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2 transition-colors relative"
+              onClick={handleShare}
+            >
               <Share2 size={16} />
               <span className="text-sm font-medium">Share</span>
+              {shareCopied && (
+                <span className="absolute top-0 right-0 bg-green-100 text-green-700 text-xs px-2 py-1 rounded shadow">
+                  Copied!
+                </span>
+              )}
             </button>
 
             {/* 导出PDF按钮 */}

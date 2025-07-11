@@ -82,6 +82,10 @@ function SelectCity() {
         return;
       }
         
+      if (days <= 0) {
+        alert("Please select a valid date range!");
+        return;
+      }
       createTrip(cityId, startDate, days, tripName);
 
       if (isFromMainPage) {

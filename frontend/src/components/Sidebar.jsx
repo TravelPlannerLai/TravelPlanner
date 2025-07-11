@@ -28,7 +28,6 @@ const Sidebar = ({
   const isLoggedIn =
     !!localStorage.getItem("userToken") || !!localStorage.getItem("userData");
 
-  const username = localStorage.getItem("username");
   const email = localStorage.getItem("email");
 
   // 添加调试用的点击处理函数
@@ -182,15 +181,6 @@ const Sidebar = ({
                 {isLoggedIn && email ? email : "Guest Mode"}
               </p>
             </div>
-            {!collapsed && (
-          <div>
-            <h3 className="font-semibold text-gray-800">
-              {isLoggedIn ? username: "Not Logged In"}
-            </h3>
-            <p className="text-sm text-gray-500">
-              {isLoggedIn ? "Premium Member" : ""}
-            </p>
-          </div>
             )}
           </div>
         </div>
@@ -263,8 +253,11 @@ const Sidebar = ({
                   {route.places.map((place, idx) => {
                     const prevPlanDate = idx > 0 ? route.places[idx - 1].planDate : null;
                     const showDivider = idx > 0 && place.planDate !== prevPlanDate;
+                    // Generate a unique key for each list item
+                    const key = `${place.place_id || place.placeId || "noid"}-${place.planDate || "noplan"}-${place.visitOrder || idx}`;
+
                     return (
-                      <React.Fragment key={place.place_id || idx}>
+                      <React.Fragment key={key}>
                         {showDivider && (
                           <li>
                             <hr className="my-1 border-gray-300" />
@@ -308,26 +301,26 @@ const Sidebar = ({
           <span className="font-semibold">Days:</span> {route.days}
           </span>
           </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-gray-400 text-sm">
-                    No saved routes yet.
-                  </div>
-                )
+              </div>
+            ))
               ) : (
-                <div className="text-gray-400 text-sm">
-                  Please{" "}
-                  <Link to="/login" className="text-blue-500 underline">
-                    log in
-                  </Link>{" "}
-                  to save your routes
-                </div>
-              )}
+            <div className="text-gray-400 text-sm">
+              No saved routes yet.
             </div>
+              )
+            ) : (
+              <div className="text-gray-400 text-sm">
+            Please{" "}
+            <Link to="/login" className="text-blue-500 underline">
+              log in
+            </Link>{" "}
+            to save your routes
+              </div>
+            )}
           </div>
-        )}
-      </div>
+            </div>
+          )}
+        </div>
 
       {/* 底部设置和登出 */}
       <div className="border-t border-gray-200 p-4 space-y-2">
