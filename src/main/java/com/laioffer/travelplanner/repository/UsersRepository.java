@@ -17,4 +17,6 @@ public interface UsersRepository extends CrudRepository<UsersEntity, UUID> {
     @Modifying
     @Query("UPDATE users SET username = :username WHERE email = :email")
     void updateNameByEmail(String email, String username);
+
+    UsersEntity getByUserId(UUID userId);
 }

@@ -11,5 +11,6 @@ public record TripEntity(@Id UUID tripId,
                          UUID userId,
                          UUID cityId,
                          LocalDate startDate,
-                         int days) {
+                         int days,
+                         String name) {
 }

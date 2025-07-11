@@ -5,6 +5,7 @@ import com.laioffer.travelplanner.repository.CityRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -24,6 +25,11 @@ public class CityService {
     public CityEntity getCityById(UUID cityId) {
         return cityRepository.getCityEntityByCityId(cityId);
     }
+
+    public Optional<CityEntity> getCityByName(String name) {
+        return cityRepository.findCityEntityByName(name);
+    }
+
 
     public List<CityEntity> getCitiesByCountry(String country) {
         return cityRepository.getCityEntityByCountry(country);

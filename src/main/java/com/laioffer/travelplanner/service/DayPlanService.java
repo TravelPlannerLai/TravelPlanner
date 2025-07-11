@@ -36,14 +36,26 @@ public class DayPlanService {
 
     public void saveDayPlanWithRouteAndPois(UUID tripId, DayPlanSaveRequest request) {
 
-        // Save DayPlan
-        DayPlanEntity dayPlan = new DayPlanEntity(
-                null,
+        Optional<DayPlanEntity> existingDayPlan = dayPlanRepository.findByTripIdAndDayNumberAndPlanDate(
                 tripId,
                 request.dayNumber(),
                 request.planDate()
         );
-        dayPlan = dayPlanRepository.save(dayPlan);
+
+        // Use the existing DayPlanEntity if it exists; otherwise, create a new one
+        DayPlanEntity dayPlan = existingDayPlan.orElseGet(() -> {
+            DayPlanEntity newDayPlan = new DayPlanEntity(
+                    null,
+                    tripId,
+                    request.dayNumber(),
+                    request.planDate()
+            );
+            return dayPlanRepository.save(newDayPlan);
+        });
+
+        // Retrieve the existing day plan and remove all its associated routes
+        // Delete associated routes
+        existingDayPlan.ifPresent(dayPlanEntity -> routeRepository.deleteByPlanId(dayPlanEntity.planId()));
 
         // Save POIs and Route entries
         for (var poiReq : request.pois()) {
@@ -139,7 +151,8 @@ public class DayPlanService {
                                 typesNode,
                                 poi.photoReference(),
                                 openingHours,
-                                route.visitOrder()
+                                route.visitOrder(),
+                                poi.placeId()
                         );
                     })
                     .collect(Collectors.toList());
@@ -153,6 +166,18 @@ public class DayPlanService {
         }
 
         return result;
+    }
+
+    public void deleteByTripId(UUID tripId) {
+        // Find all day plans associated with the given tripId
+        List<DayPlanEntity> plans = dayPlanRepository.findByTripId(tripId);
+
+        // Delete all associated routes for each day plan
+        plans.forEach(dayPlan -> routeRepository.deleteByPlanId(dayPlan.planId()));
+
+        // Delete all day plans
+        dayPlanRepository.deleteByTripId(tripId);
+
     }
 }
 

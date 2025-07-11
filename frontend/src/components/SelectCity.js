@@ -3,60 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import "./SelectCity.css";
 import { calculateDays } from "../utils/dateUtils";
 import Cookies from "js-cookie";
-
-const stateCityData = {
-  Alabama: ["Birmingham", "Montgomery", "Mobile"],
-  Alaska: ["Anchorage", "Fairbanks", "Juneau"],
-  Arizona: ["Phoenix", "Tucson", "Mesa"],
-  Arkansas: ["Little Rock", "Fort Smith", "Fayetteville"],
-  California: ["Los Angeles", "San Francisco", "San Diego"],
-  Colorado: ["Denver", "Colorado Springs", "Aurora"],
-  Connecticut: ["Bridgeport", "New Haven", "Stamford"],
-  Delaware: ["Wilmington", "Dover", "Newark"],
-  Florida: ["Miami", "Orlando", "Tampa"],
-  Georgia: ["Atlanta", "Savannah", "Augusta"],
-  Hawaii: ["Honolulu", "Hilo", "Kailua"],
-  Idaho: ["Boise", "Meridian", "Nampa"],
-  Illinois: ["Chicago", "Aurora", "Naperville"],
-  Indiana: ["Indianapolis", "Fort Wayne", "Evansville"],
-  Iowa: ["Des Moines", "Cedar Rapids", "Davenport"],
-  Kansas: ["Wichita", "Overland Park", "Kansas City"],
-  Kentucky: ["Louisville", "Lexington", "Bowling Green"],
-  Louisiana: ["New Orleans", "Baton Rouge", "Shreveport"],
-  Maine: ["Portland", "Lewiston", "Bangor"],
-  Maryland: ["Baltimore", "Frederick", "Rockville"],
-  Massachusetts: ["Boston", "Worcester", "Springfield"],
-  Michigan: ["Detroit", "Grand Rapids", "Warren"],
-  Minnesota: ["Minneapolis", "Saint Paul", "Rochester"],
-  Mississippi: ["Jackson", "Gulfport", "Southaven"],
-  Missouri: ["Kansas City", "Saint Louis", "Springfield"],
-  Montana: ["Billings", "Missoula", "Great Falls"],
-  Nebraska: ["Omaha", "Lincoln", "Bellevue"],
-  Nevada: ["Las Vegas", "Reno", "Henderson"],
-  "New Hampshire": ["Manchester", "Nashua", "Concord"],
-  "New Jersey": ["Newark", "Jersey City", "Paterson"],
-  "New Mexico": ["Albuquerque", "Santa Fe", "Las Cruces"],
-  "New York": ["New York City", "Buffalo", "Rochester"],
-  "North Carolina": ["Charlotte", "Raleigh", "Greensboro"],
-  "North Dakota": ["Fargo", "Bismarck", "Grand Forks"],
-  Ohio: ["Columbus", "Cleveland", "Cincinnati"],
-  Oklahoma: ["Oklahoma City", "Tulsa", "Norman"],
-  Oregon: ["Portland", "Salem", "Eugene"],
-  Pennsylvania: ["Philadelphia", "Pittsburgh", "Allentown"],
-  "Rhode Island": ["Providence", "Cranston", "Warwick"],
-  "South Carolina": ["Charleston", "Columbia", "North Charleston"],
-  "South Dakota": ["Sioux Falls", "Rapid City", "Aberdeen"],
-  Tennessee: ["Nashville", "Memphis", "Knoxville"],
-  Texas: ["Houston", "Austin", "Dallas"],
-  Utah: ["Salt Lake City", "West Valley City", "Provo"],
-  Vermont: ["Burlington", "South Burlington", "Rutland"],
-  Virginia: ["Virginia Beach", "Norfolk", "Richmond"],
-  Washington: ["Seattle", "Spokane", "Tacoma"],
-  "West Virginia": ["Charleston", "Huntington", "Morgantown"],
-  Wisconsin: ["Milwaukee", "Madison", "Green Bay"],
-  Wyoming: ["Cheyenne", "Casper", "Laramie"],
-  "District of Columbia": ["Washington D.C."],
-};
+import { cityCoordinatesData, stateCityData } from "./CityData";
 
 function SelectCity() {
   const [selectedState, setSelectedState] = useState("");
@@ -81,10 +28,12 @@ function SelectCity() {
     if (selectedCity && selectedCity !== currentCity) {
       // 如果 selectedCity 变化了，清除 placesByDay cookie
       Cookies.remove("placesByDay");
+      Cookies.remove("startDate");
       flag = true;
     }
     console.log("Flag for placesByDay cookie:", flag);
   }, [selectedCity, currentCity]);
+  
 
   const handleStateChange = (e) => {
     const state = e.target.value;
@@ -97,7 +46,7 @@ function SelectCity() {
     setSelectedCity(e.target.value);
   };
 
-  const handleNavigateToMainPage = () => {
+  const handleNavigateToMainPage = async() => {
     if (selectedCity) {
       const days = calculateDays(startDate, endDate);
       if (days > 10) {
@@ -106,6 +55,35 @@ function SelectCity() {
         );
         return;
       }
+      let cityId = null;
+      // 调用后端API
+      try {
+        cityId = await addCityToBackend({
+            name: selectedCity,
+            country: "USA", // 假设所有城市都在美国
+            lat: cityCoordinatesData[selectedCity]?.lat || 0,
+            lon: cityCoordinatesData[selectedCity]?.lon || 0,
+          });
+        console.log("City added to backend:", cityId);
+        if (!cityId || cityId === "null") {
+          // 获取 cityId
+          const cityRes = await fetch(`/api/city/name?name=${encodeURIComponent(selectedCity)}`,{ credentials: "include" });
+          if (!cityRes.ok) {
+            alert("Failed to get city info!");
+            return;
+          }
+          const cityData = await cityRes.json();
+          cityId = cityData.cityId?.replace(/^"|"$/g, "");
+        }
+        console.log("City ID:", cityId);
+      } catch (error) {
+        console.error("Error fetching city ID:", error);
+        alert("Failed to get city info!");
+        return;
+      }
+        
+      createTrip(cityId, startDate, days, tripName);
+
       if (isFromMainPage) {
         // 如果是从主页面来的，返回主页面并传递选择的城市
         navigate("/main", {
@@ -139,6 +117,69 @@ function SelectCity() {
     // 返回主页面但不更改城市
     navigate("/main");
   };
+
+  const addCityToBackend = async (city) => {
+    try {
+      // 获取城市坐标信息
+      const coord = cityCoordinatesData[city.name];
+      const cityWithCoord = coord
+        ? { ...city, lat: coord.lat, lon: coord.lon, country: coord.country }
+        : city;
+
+      const response = await fetch("/api/city", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(cityWithCoord),
+      });
+      if (response.status === 409) {
+        console.warn("City already exists");
+        return null;
+      }
+      if (!response.ok) {
+        throw new Error("Failed to add city");
+      }
+      const text = await response.text();
+      console.log("City added:", text);
+      if (!text) return null;
+      return text.replace(/^"|"$/g, "");
+    } catch (error) {
+      console.error("Error adding city:", error);
+      return null;
+    }
+  };
+
+  const createTrip = async (cityId, startDate, days, name) => {
+    try {
+      const response = await fetch("/api/trips", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cityId,
+          startDate,
+          days,
+          name,
+        }),
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to create trip");
+      }
+      const text = await response.text();
+      console.log("Trip created:", text);
+      // 设置 cookies
+      Cookies.set("tripId", text?.replace(/^"|"$/g, ""), { expires: 7 });
+      Cookies.set("startDate", startDate, { expires: 7 });
+      return text; // 返回创建的行程ID或其他信息
+    } catch (error) {
+      console.error("Create trip error:", error);
+      alert("Network error, please try again.");
+      return null;
+    }
+  }
 
   return (
     <div className="select-city-page">
