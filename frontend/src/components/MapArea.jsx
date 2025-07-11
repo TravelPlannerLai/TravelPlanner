@@ -325,19 +325,52 @@ const GoogleMapComponent = React.forwardRef((props, ref) => {
 // 主 MapArea 组件
 const MapArea = ({
   currentCity,
-  selectedDays,
-  selectedRoute,
+  // selectedDays,
+  // selectedRoute,
   onSaveRoute,
-  tripDays = 10,
+  tripDays = 0,
+  // setTripDays = () => {}, // Function to set trip days, default to no-op
 }) => {
   const [showAIAssistant, setShowAIAssistant] = useState(true);
-  const [currentDay, setCurrentDay] = useState(1);
+  const [currentDay, setCurrentDay] = useState(() => {
+    const cookieDay = Cookies.get("currentDay");
+    return cookieDay ? cookieDay : 1;
+  });
+
+  useEffect(() => {
+    Cookies.set("currentDay", currentDay, { expires: 7 });
+  }, [currentDay]);
+
   const [placesByDay, setPlacesByDay] = useState({ 1: [] });
   const [waypoints, setWaypoints] = useState([]);
   const autoCompleteRef = useRef();
 
+  // // If tripDays is 0, fetch from API using tripId in cookies
+  console.log("Trip days:", tripDays);
+  // useEffect(() => {
+  //   if (tripDays === 0) {
+  //     const tripId = Cookies.get("tripId");
+  //     if (tripId) {
+  //       fetch(`/api/trips/${tripId}`, { credentials: "include" })
+  //         .then(res => res.json())
+  //         .then(data => {
+  //           if (data && data.days) {
+  //             setTripDays(data.days);
+  //             // Optionally set currentDay to 1 or a valid day
+  //             console.log("Fetched trip days from API:", data.days);
+  //           }
+  //         })
+  //         .catch(err => {
+  //           console.error("Failed to fetch trip info:", err);
+  //         });
+  //     }
+  //   }
+  // }, [tripDays, setTripDays]);
+
   const handleDayChange = (e) => {
-    setCurrentDay(Number(e.target.value));
+    console.log("Changing current day to:", e.target.value);
+    setCurrentDay(e.target.value);
+    Cookies.set("currentDay", e.target.value, { expires: 7 });
   };
 
   const [cityCoordinates, setCityCoordinates] = useState({});
@@ -362,6 +395,7 @@ const MapArea = ({
             }
             const service = new window.google.maps.places.PlacesService(mapInstance);
             for (const [day, placeIds] of Object.entries(parsed.placeIdsByDay)) {
+              console.log(`Fetching details for day ${day} with placeIds:`, placeIds);
               const places = await Promise.all(
                 placeIds.map(
                   (place_id) =>
@@ -420,10 +454,15 @@ const MapArea = ({
               newPlacesByDay[day] = places.filter(Boolean);
             }
             setPlacesByDay(newPlacesByDay);
-            // Set currentDay to the first day with places
-            const days = Object.keys(newPlacesByDay);
-            if (days.length > 0) {
-              setCurrentDay(days[0]);
+            // Restore currentDay from cookie, not from Object.keys
+            const cookieDay = Cookies.get("currentDay");
+            console.log("Restored cookieDay:", cookieDay);
+            if (cookieDay) {
+              setCurrentDay(cookieDay);
+            } else {
+              // fallback: first key
+              const days = Object.keys(newPlacesByDay);
+              setCurrentDay(days.length > 0 ? days[0] : 1);
             }
             console.log("Restored placesByDay:", newPlacesByDay);
             // Restore waypoints for current day
@@ -437,6 +476,7 @@ const MapArea = ({
                 address: p.address || p.formatted_address || "",
               }))
             );
+            console.log("Restored waypoints for current day:", restored);
           };
           fetchAll();
       } catch {
@@ -519,6 +559,7 @@ const MapArea = ({
     }
   }
 
+  const dayKeys = Array.from({ length: tripDays }, (_, i) => (i + 1).toString());
   // Wrap `addPlace` in useCallback
   const addPlace = React.useCallback(
     (place) => {
@@ -625,7 +666,10 @@ const MapArea = ({
     }
     // 创建 trip
     const tripId = Cookies.get("tripId") || null;
-    const startDate = Cookies.get("startDate") || new Date().toISOString().slice(0, 10);
+    let startDate = Cookies.get("startDate");
+    if (!startDate || isNaN(new Date(startDate))) {
+      startDate = new Date().toISOString().slice(0, 10); // fallback to today
+    }
     if (!tripId) {
       alert("无法保存路线！");
       return;
@@ -1001,8 +1045,10 @@ const MapArea = ({
               value={currentDay}
               onChange={handleDayChange}
             >
-              {Array.from({ length: tripDays }, (_, i) => (
-                <option key={i + 1} value={i + 1}>{`Day ${i + 1}`}</option>
+              {dayKeys.map((dayKey) => (
+                <option key={dayKey} value={dayKey}>
+                  {`Day ${dayKey}`}
+                </option>
               ))}
             </select>
           </div>

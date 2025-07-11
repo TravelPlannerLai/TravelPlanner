@@ -67,7 +67,7 @@ const Dashboard = () => {
 
             return {
               ...trip,
-              days: dayPlans.length,
+              days: trip.days || 10,
               places,
               startDate: trip.startDate,
               cityId: trip.cityId,
@@ -88,10 +88,30 @@ const Dashboard = () => {
   }, []);
 
   // 新增：获取天数
-  const tripDays =
-    location.state?.startDate && location.state?.endDate
-      ? calculateDays(location.state.startDate, location.state.endDate)
-      : 10; // 默认10天
+  const [tripDays, setTripDays] = useState(() => {
+    if (location.state?.startDate && location.state?.endDate) {
+      return calculateDays(location.state.startDate, location.state.endDate);
+    }
+    const tripDaysCookie = Cookies.get("tripDays");
+    if (tripDaysCookie) {
+      const days = parseInt(tripDaysCookie, 10);
+      if (!isNaN(days) && days > 0) {
+        return days;
+      }
+    }
+    return 1; // 默认1天
+  });
+
+  useEffect(() => {
+    Cookies.set("tripDays", tripDays, { expires: 7 });
+  }, [tripDays]);
+
+  // Example: update tripDays when location changes
+  useEffect(() => {
+    if (location.state?.startDate && location.state?.endDate) {
+      setTripDays(calculateDays(location.state.startDate, location.state.endDate));
+    }
+  }, [location.state?.startDate, location.state?.endDate]);
 
   // 明确定义切换函数
   const handleSidebarToggle = () => {
@@ -107,7 +127,13 @@ const Dashboard = () => {
     console.log("route.places:", route.places);
     // Build placeIdsByDay from route.places
     const placeIdsByDay = (route.places || []).reduce((acc, place) => {
-      const day = place.planDate || "unknown";
+      const startDate = new Date(route.startDate || new Date());
+      const planDate = new Date(place.planDate);
+      // 计算 day: planDate 与 startDate 的天数差 + 1
+      const day =
+        !isNaN(planDate.getTime()) && !isNaN(startDate.getTime())
+          ? Math.floor((planDate - startDate) / (1000 * 60 * 60 * 24)) + 1
+          : 3;// 默认第3天
       const id = place.place_id || place.poiId;
       if (id) {
         if (!acc[day]) acc[day] = [];
@@ -136,6 +162,11 @@ const Dashboard = () => {
     console.log("城市已设置为:", cityData.name || "Unknown City");
     Cookies.set("startDate", route.startDate || new Date().toISOString().split("T")[0], { expires: 7 });
     console.log("Start date set in cookies:", route.startDate || new Date().toISOString().split("T")[0]);
+    Cookies.set("currentDay", "1", { expires: 7 }); // 默认设置为第1天
+    console.log("Current day set in cookies: 1");
+    Cookies.set("tripDays", route.days || 1, { expires: 7 });
+    console.log("Trip days set in cookies:", route.days || 1);
+    
   };
 
   // 处理新路线保存
@@ -179,7 +210,13 @@ const Dashboard = () => {
     // 检查 cookie 中的 tripId 是否等于被删除的 tripId
     const cookieTripId = Cookies.get("tripId");
     if (cookieTripId && cookieTripId === tripId) {
+      Cookies.remove("placesByDay");
       Cookies.remove("tripId");
+      Cookies.remove("startDate");
+      Cookies.remove("currentCity");
+      Cookies.remove("currentDay");
+      Cookies.remove("tripDays");
+
       navigate("/select_city", {
         state: {
           fromMain: true,
@@ -217,10 +254,11 @@ const Dashboard = () => {
         {/* 地图区域 - 恢复完整的 MapArea */}
         <MapArea
           currentCity={currentCity}
-          selectedDays={selectedDays}
-          selectedRoute={selectedRoute}
+          // selectedDays={selectedDays}
+          // selectedRoute={selectedRoute}
           onSaveRoute={onSaveRoute}
           tripDays={tripDays} // 传递天数
+          // setTripDays={setTripDays}
         />
       </div>
     </div>
