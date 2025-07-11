@@ -1,13 +1,9 @@
 import React, { useState, useEffect, useRef, useImperativeHandle } from "react";
 import { useJsApiLoader, Autocomplete } from "@react-google-maps/api";
 import {
-  Plus,
-  Minus,
-  Compass,
   MapPin,
-  Bot,
+  // Bot,
   Save,
-  Navigation,
 } from "lucide-react";
 import Cookies from "js-cookie";
 import {
@@ -331,7 +327,7 @@ const MapArea = ({
   tripDays = 0,
   // setTripDays = () => {}, // Function to set trip days, default to no-op
 }) => {
-  const [showAIAssistant, setShowAIAssistant] = useState(true);
+  // const [showAIAssistant, setShowAIAssistant] = useState(true);
   const [currentDay, setCurrentDay] = useState(() => {
     const cookieDay = Cookies.get("currentDay");
     return cookieDay ? cookieDay : 1;
@@ -947,7 +943,7 @@ const MapArea = ({
         />
 
         {/* 调试信息 - 临时显示 */}
-        <div className="absolute top-4 left-4 bg-white p-3 rounded shadow-lg text-xs z-20">
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white p-3 rounded shadow-lg text-xs z-20">
           <div>
             <strong>Current City:</strong> {currentCity}
           </div>
@@ -960,7 +956,8 @@ const MapArea = ({
           </div>
         </div>
 
-        <div className="absolute top-4 right-[120px] z-20">
+        {/* 搜索框 */}
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20 flex justify-center bg-white p-4 rounded-lg shadow-md border border-gray-300">
           <Autocomplete
             onLoad={(ac) => (autoCompleteRef.current = ac)}
             onPlaceChanged={handlePlaceChanged}
@@ -968,8 +965,14 @@ const MapArea = ({
               cityCoordinates[currentCity]
                 ? {
                     bounds: new window.google.maps.LatLngBounds(
-                        { lat: cityCoordinates[currentCity].lat - delta, lng: cityCoordinates[currentCity].lng - delta },// southwest corner
-                        { lat: cityCoordinates[currentCity].lat + delta, lng: cityCoordinates[currentCity].lng + delta }  // northeast corner
+                      {
+                        lat: cityCoordinates[currentCity].lat - delta,
+                        lng: cityCoordinates[currentCity].lng - delta,
+                      }, // southwest corner
+                      {
+                        lat: cityCoordinates[currentCity].lat + delta,
+                        lng: cityCoordinates[currentCity].lng + delta,
+                      } // northeast corner
                     ),
                     strictBounds: true,
                   }
@@ -977,33 +980,11 @@ const MapArea = ({
             }
           >
             <input
-                type="text"
-                placeholder="Search destinations..."
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+              type="text"
+              placeholder="Search destinations..."
+              className="px-4 py-2 border border-gray-400 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-80 text-gray-700 placeholder-gray-400"
             />
-            {/*<input*/}
-            {/*    type="text"*/}
-            {/*    placeholder="Search places..."*/}
-            {/*    className="flex-1 border border-gray-300 p-2 rounded text-sm"*/}
-            {/*/>*/}
           </Autocomplete>
-
-        </div>
-
-        {/* 地图控制按钮 */}
-        <div className="absolute top-4 right-4 flex flex-col bg-white rounded-lg shadow-lg overflow-hidden z-10">
-          <button className="p-3 hover:bg-gray-50 border-b border-gray-200 text-gray-600 transition-colors">
-            <Plus size={18} />
-          </button>
-          <button className="p-3 hover:bg-gray-50 border-b border-gray-200 text-gray-600 transition-colors">
-            <Minus size={18} />
-          </button>
-          <button className="p-3 hover:bg-gray-50 border-b border-gray-200 text-gray-600 transition-colors">
-            <Compass size={18} />
-          </button>
-          <button className="p-3 hover:bg-gray-50 text-gray-600 transition-colors">
-            <Navigation size={18} />
-          </button>
         </div>
 
           {/* 可拖拽的景点列表 */}
@@ -1077,7 +1058,7 @@ const MapArea = ({
         </div>
 
         {/* AI旅行助手 */}
-        {showAIAssistant && (
+        {/* {showAIAssistant && (
           <div className="absolute bottom-4 right-4 bg-white rounded-lg shadow-xl p-4 max-w-sm z-10">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-bold text-gray-800 flex items-center">
@@ -1134,7 +1115,7 @@ const MapArea = ({
               </div>
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );

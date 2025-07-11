@@ -1,40 +1,62 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Calendar,
   Download,
   Share2,
-  Search,
   Filter,
   Star,
   Users,
   MapPin,
 } from "lucide-react";
+import html2canvas from 'html2canvas';
 
 const TopBar = ({
   currentCity,
-  selectedDays,
   onCityChange,
-  onDaysChange,
-  selectedRoute,
 }) => {
-  const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
   const [shareCopied, setShareCopied] = useState(false);
 
-  const handleShare = () => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href)
-        .then(() => {
-          setShareCopied(true);
-          setTimeout(() => setShareCopied(false), 1500);
-        })
-        .catch((err) => {
-          alert("Failed to copy link: " + err);
-        });
-    } else {
-      alert("Clipboard API not supported in this browser.");
+  const handleShare = async () => {
+    try {
+      // Find the main content area (adjust selector as needed)
+      const mainContent = document.querySelector('.main-content') || document.body;
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const canvas = await html2canvas(mainContent, {
+        backgroundColor: '#ffffff',
+        scale: 2, // Higher quality
+        logging: false,
+      });
+      
+      canvas.toBlob(async (blob) => {
+        // Check if native sharing is supported
+        if (navigator.share) {
+          const file = new File([blob], `${currentCity}-itinerary.png`, { type: 'image/png' });
+          try {
+            await navigator.share({
+              title: `My ${currentCity} Travel Plan`,
+              text: 'Check out my travel itinerary!',
+              files: [file]
+            });
+            return;
+          } catch (shareErr) {
+            console.log('Native share failed, falling back to clipboard');
+          }
+        }
+        
+        // Fallback: copy to clipboard
+        const item = new ClipboardItem({ 'image/png': blob });
+        await navigator.clipboard.write([item]);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 1500);
+        
+      }, 'image/png', 0.9);
+      
+    } catch (err) {
+      alert("Failed to capture screenshot: " + err.message);
     }
   };
 
@@ -115,29 +137,7 @@ const TopBar = ({
             </div>
           </div>
 
-          {/* 右侧：搜索和操作按钮 */}
           <div className="flex items-center space-x-3">
-          {/*  /!* 搜索框 *!/*/}
-          {/*  <div className="relative">*/}
-          {/*    <Autocomplete*/}
-          {/*      onLoad={(ac) => (autoCompleteRef.current = ac)}*/}
-          {/*      onPlaceChanged={handlePlaceChanged}*/}
-          {/*      options={{*/}
-          {/*        bounds: new window.google.maps.LatLngBounds(*/}
-          {/*            { lat: 39.5, lng: 115.5 }, // southwest corner*/}
-          {/*            { lat: 41.5, lng: 117.5 }  // northeast corner*/}
-          {/*        ),*/}
-          {/*        strictBounds: true,*/}
-          {/*        componentRestrictions: { country: "cn" }, // 限制中国*/}
-          {/*      }}*/}
-          {/*    >*/}
-          {/*      <input*/}
-          {/*        type="text"*/}
-          {/*        placeholder="Search destinations..."*/}
-          {/*        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"*/}
-          {/*      />*/}
-          {/*    </Autocomplete>*/}
-          {/*  </div>*/}
 
             {/* 筛选按钮 */}
             <button
