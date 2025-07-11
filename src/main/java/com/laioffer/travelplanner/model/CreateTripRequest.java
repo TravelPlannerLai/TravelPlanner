@@ -6,5 +6,6 @@ import java.util.UUID;
 public record CreateTripRequest(
         UUID cityId,
         LocalDate startDate,
-        int days
+        int days,
+        String name
 ) {}

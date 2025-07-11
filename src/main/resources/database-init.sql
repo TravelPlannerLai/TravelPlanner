@@ -56,7 +56,8 @@ CREATE TABLE IF NOT EXISTS trips
     user_id    UUID NOT NULL REFERENCES users (user_id),
     city_id    UUID NOT NULL REFERENCES cities (city_id),
     start_date DATE NOT NULL,
-    days       INT  NOT NULL CHECK (days BETWEEN 1 AND 15)
+    days       INT  NOT NULL CHECK (days BETWEEN 1 AND 15),
+    name       TEXT
 );
 
 -- 6. day_plans 表：某行程每天计划

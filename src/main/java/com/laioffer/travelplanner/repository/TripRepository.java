@@ -14,4 +14,9 @@ public interface TripRepository extends ListCrudRepository<TripEntity, UUID> {
 
     List<TripEntity> findByUserId(UUID userId);
 
+    @Modifying
+    @Query("DELETE FROM trips WHERE trip_id = :tripId")
+    void deleteByTripId(UUID tripId);
+
+
 }

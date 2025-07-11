@@ -80,7 +80,6 @@ const GoogleMapComponent = React.forwardRef((props, ref) => {
     addPlace,
     deletePlace,
     updatePlaceName,
-    addCityToBackend,
     addPOIToBackend,
     cityCoordinates,
   } = props;
@@ -102,12 +101,6 @@ const GoogleMapComponent = React.forwardRef((props, ref) => {
         return;
       }
       console.log(`Initializing map for ${currentCity}:`, center);
-      addCityToBackend({
-        name: currentCity,
-        country: center.country || "Unknown",
-        lat: center.lat,
-        lon: center.lng,
-      });
 
       const map = new window.google.maps.Map(mapRef.current, {
         zoom: 12,
@@ -121,31 +114,6 @@ const GoogleMapComponent = React.forwardRef((props, ref) => {
       markersRef.current.forEach((marker) => marker.setMap(null));
       markersRef.current = [];
 
-      // 添加景点标记
-      // if (attractions && attractions.length > 0) {
-      //   attractions.forEach((attraction) => {
-      //     const marker = new window.google.maps.Marker({
-      //       position: attraction.coordinates,
-      //       map: map,
-      //       title: attraction.name,
-      //       icon: {
-      //         url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-      //           <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-      //             <circle cx="20" cy="20" r="18" fill="white" stroke="#3B82F6" stroke-width="2"/>
-      //             <text x="20" y="28" text-anchor="middle" font-size="16">${attraction.icon}</text>
-      //           </svg>
-      //         `)}`,
-      //         scaledSize: new window.google.maps.Size(40, 40),
-      //       },
-      //     });
-
-      //     marker.addListener("click", () => {
-      //       onAttractionClick(attraction);
-      //     });
-
-      //     markersRef.current.push(marker);
-      //   });
-      // }
       if (places && places.length > 0) {
         places.forEach((place, idx) => {
           const marker = new window.google.maps.Marker({
@@ -307,30 +275,7 @@ const GoogleMapComponent = React.forwardRef((props, ref) => {
                 }
               );
             } else {
-              // fallback if no place found
-              const fallbackPlace = {
-                name: "Selected Location",
-                address: `Lat: ${e.latLng.lat().toFixed(6)}, Lng: ${e.latLng
-                  .lng()
-                  .toFixed(6)}`,
-                lat: e.latLng.lat(),
-                lng: e.latLng.lng(),
-                place_id: null,
-                types: [],
-                price_level: null,
-                rating: null,
-                user_ratings_total: null,
-                opening_hours: null,
-                photo_reference: null,
-              };
-              const confirmMsg = `
-        Add this location to your route?
-
-        ${fallbackPlace.address}
-                `.trim();
-              if (window.confirm(confirmMsg)) {
-                addPlace(fallbackPlace);
-              }
+              alert("Customized pin cannot be added to Route");
             }
           }
         );
@@ -369,7 +314,6 @@ const GoogleMapComponent = React.forwardRef((props, ref) => {
     places,
     deletePlace,
     updatePlaceName,
-    addCityToBackend,
     addPOIToBackend,
     cityCoordinates,
     ref,
@@ -476,6 +420,11 @@ const MapArea = ({
               newPlacesByDay[day] = places.filter(Boolean);
             }
             setPlacesByDay(newPlacesByDay);
+            // Set currentDay to the first day with places
+            const days = Object.keys(newPlacesByDay);
+            if (days.length > 0) {
+              setCurrentDay(days[0]);
+            }
             console.log("Restored placesByDay:", newPlacesByDay);
             // Restore waypoints for current day
             const restored = newPlacesByDay[currentDay] || [];
@@ -492,11 +441,13 @@ const MapArea = ({
           fetchAll();
       } catch {
         setPlacesByDay({ 1: [] });
+        setCurrentDay(1);
         setWaypoints([]);
         console.error("Failed to parse placesByDay from cookie, resetting state.");
       }
     } else {
       setPlacesByDay({ 1: [] });
+      setCurrentDay(1);
       setWaypoints([]);
       console.log("No saved placesByDay found in cookies, starting fresh.");
     }
@@ -609,31 +560,6 @@ const MapArea = ({
     [currentDay]
   );
 
-  const addCityToBackend = async (city) => {
-    try {
-      const response = await fetch("/api/city", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(city),
-      });
-      if (response.status === 409) {
-        console.warn("City already exists");
-        return;
-      }
-      if (!response.ok) {
-        throw new Error("Failed to add city");
-      }
-      const text = await response.text();
-      const data = text ? JSON.parse(text) : {};
-      console.log("City added:", data);
-      return data;
-    } catch (error) {
-      console.error("Error adding city:", error);
-      return null;
-    }
-  };
 
   const addPOIToBackend = async (cityName, place) => {
     try {
@@ -683,12 +609,11 @@ const MapArea = ({
     let cityQueryName = currentCity;
     if (cityQueryName === "New York City") cityQueryName = "New York";
     try {
-      const cityRes = await fetch(
-        `/api/city/name/${encodeURIComponent(cityQueryName)}`
-      );
+      // 获取 cityId
+      const cityRes = await fetch(`/api/city/name?name=${encodeURIComponent(cityQueryName)}`,{ credentials: "include" });
       if (cityRes.ok) {
         const cityData = await cityRes.json();
-        cityId = cityData.cityId || cityData.city_id || cityData.id;
+        cityId = cityData.cityId?.replace(/^"|"$/g, "");
       }
     } catch (e) {
       alert("获取城市ID失败");
@@ -699,28 +624,10 @@ const MapArea = ({
       return;
     }
     // 创建 trip
-    const startDate = new Date().toISOString().slice(0, 10); // yyyy-mm-dd
-    const days = daysWithPins.length;
-    let tripId = null;
-    try {
-      const tripRes = await fetch("/api/trips", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ cityId, startDate, days }),
-      });
-      if (tripRes.ok) {
-        tripId = await tripRes.text();
-        // 可能是 uuid 字符串
-        if (tripId.startsWith('"') && tripId.endsWith('"'))
-          tripId = tripId.slice(1, -1);
-      }
-    } catch (e) {
-      alert("创建行程(trip)失败");
-      return;
-    }
+    const tripId = Cookies.get("tripId") || null;
+    const startDate = Cookies.get("startDate") || new Date().toISOString().slice(0, 10);
     if (!tripId) {
-      alert("未能成功创建行程(trip)");
+      alert("无法保存路线！");
       return;
     }
     // 依次为每个有图钉的 day 创建 day plan
@@ -780,6 +687,7 @@ const MapArea = ({
           tripId,
           cityId,
           startDate,
+
         });
       } catch (e) {
         alert(`保存第${dayNumber}天路线失败`);
@@ -788,6 +696,7 @@ const MapArea = ({
     }
     alert("路线已成功保存到数据库！");
     // 可选：清空本地数据或刷新 saved routes
+    window.location.reload();
   };
 
   // load 搜索库
@@ -989,7 +898,6 @@ const MapArea = ({
           addPlace={addPlace}
           deletePlace={deletePlace}
           updatePlaceName={updatePlaceName}
-          addCityToBackend={addCityToBackend}
           addPOIToBackend={addPOIToBackend}
           cityCoordinates={cityCoordinates}
         />

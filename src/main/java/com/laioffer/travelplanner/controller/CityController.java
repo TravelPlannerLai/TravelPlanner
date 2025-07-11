@@ -4,6 +4,8 @@ import com.laioffer.travelplanner.entity.CityEntity;
 import com.laioffer.travelplanner.model.SaveCityRequest;
 import com.laioffer.travelplanner.repository.CityRepository;
 import com.laioffer.travelplanner.service.CityService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -44,13 +46,15 @@ public class CityController {
 //        return null;
 //    }
 
-    @GetMapping("/name/{name}")
-    public CityEntity getCityByName(@PathVariable("name") String name){
-        if (cityRepository.findCityEntityByName(name).isPresent()) {
-            return cityRepository.findCityEntityByName(name).get();
-        }
-        return null;
+    @GetMapping("/name")
+    public ResponseEntity<?> getCityByName(@RequestParam String name) {
+        return cityService.getCityByName(name)
+                .map(city -> ResponseEntity.ok(city))
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .build());
     }
+
+
 
     @GetMapping("/id/{cityId}")
     public CityEntity getCityById(@PathVariable("cityId") UUID cityId){

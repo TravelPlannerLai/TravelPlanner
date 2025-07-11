@@ -7,10 +7,10 @@ import com.laioffer.travelplanner.repository.UsersRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
@@ -84,17 +84,9 @@ public class UserController {
         );
     }
 
-    @GetMapping("/api/user/me")
-    public Map<String, Object> getCurrentUser(@AuthenticationPrincipal User user) {
-        // findByEmail 返回 Optional<UsersEntity>
-        Optional<UsersEntity> optionalEntity = usersRepo.findByEmail(user.getUsername());
-        UsersEntity entity = optionalEntity.orElse(null);
-        if (entity == null) {
-            return Map.of("error", "User not found");
-        }
-        return Map.of(
-            "username", entity.username(),
-            "email", entity.email()
-        );
+    @GetMapping("/api/users/username")
+    public String getUsername(@AuthenticationPrincipal User user){
+        UUID id = authService.getIdByEmail(user.getUsername());
+        return authService.getNameById(id);
     }
 }
