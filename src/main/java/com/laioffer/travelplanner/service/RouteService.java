@@ -6,20 +6,23 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.Comparator;
 
 @Service
 public class RouteService {
-    private final RouteRepository repository;
+    private final RouteRepository routeRepository;
 
     public RouteService(RouteRepository repository) {
-        this.repository = repository;
+        this.routeRepository = repository;
     }
 
     public RouteEntity save(RouteEntity entity) {
-        return repository.save(entity);
+        return routeRepository.save(entity);
     }
 
-    public List<RouteEntity> getByPlanId(UUID planId) {
-        return repository.findByPlanId(planId);
+    public List<RouteEntity> findByPlanId(UUID planId) {
+        List<RouteEntity> routes = routeRepository.findByPlanId(planId);
+        routes.sort(Comparator.comparingInt(RouteEntity::visitOrder));
+        return routes;
     }
 }

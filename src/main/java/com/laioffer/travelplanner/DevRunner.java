@@ -45,6 +45,5 @@ public class DevRunner implements ApplicationRunner {
         authService.signup("123456", "foo@mail.com", "Foo");
         authService.signup("1qew56", "a@mail.com", "Fo");
         UUID a = authService.signup("1afd456", "b@mail.com", "Fad");
-        tripService.createTrip(a,UUID.fromString("f47ac10b-58cc-4372-a567-0e02b2c3d478"), LocalDate.ofEpochDay(1000), 5);
     }
 }

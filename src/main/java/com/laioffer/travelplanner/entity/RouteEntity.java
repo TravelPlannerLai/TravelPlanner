@@ -7,7 +7,7 @@ import java.util.UUID;
 
 @Table("route")
 public record RouteEntity(
-        @Id UUID id,
+        @Id UUID routeId,
         UUID planId,
         UUID poiId,
         int visitOrder

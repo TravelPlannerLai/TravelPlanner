@@ -1,30 +1,158 @@
 package com.laioffer.travelplanner.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.laioffer.travelplanner.entity.DayPlanEntity;
+import com.laioffer.travelplanner.entity.PoiEntity;
+import com.laioffer.travelplanner.entity.RouteEntity;
+import com.laioffer.travelplanner.model.DayPlanSaveRequest;
+import com.laioffer.travelplanner.model.DayPlanWithRouteResponse;
+import com.laioffer.travelplanner.model.PoiWithOrderResponse;
 import com.laioffer.travelplanner.repository.DayPlanRepository;
+import com.laioffer.travelplanner.repository.PoiRepository;
+import com.laioffer.travelplanner.repository.RouteRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class DayPlanService {
+
     private final DayPlanRepository dayPlanRepository;
+    private final PoiRepository poiRepository;
+    private final RouteRepository routeRepository;
 
-    public DayPlanService(DayPlanRepository dayPlanRepository) {
+    public DayPlanService(DayPlanRepository dayPlanRepository, PoiRepository poiRepository, RouteRepository routeRepository) {
         this.dayPlanRepository = dayPlanRepository;
+        this.poiRepository = poiRepository;
+        this.routeRepository = routeRepository;
     }
 
-    public DayPlanEntity save(DayPlanEntity plan) {
-        return dayPlanRepository.save(plan);
+    public void saveDayPlanWithRouteAndPois(UUID tripId, DayPlanSaveRequest request) {
+
+        // Save DayPlan
+        DayPlanEntity dayPlan = new DayPlanEntity(
+                null,
+                tripId,
+                request.dayNumber(),
+                request.planDate()
+        );
+        dayPlan = dayPlanRepository.save(dayPlan);
+
+        // Save POIs and Route entries
+        for (var poiReq : request.pois()) {
+            Optional<PoiEntity> existingPoi = poiRepository.findByPlaceId(poiReq.placeId());
+
+            PoiEntity savedPoi;
+            if (existingPoi.isPresent()) {
+                savedPoi = existingPoi.get();
+            } else {
+
+                ObjectMapper mapper = new ObjectMapper();
+                String typesStr;
+                String openingHoursStr;
+
+
+                try {
+                    typesStr = poiReq.types() != null
+                            ? mapper.writeValueAsString(poiReq.types())
+                            : null;
+
+                    openingHoursStr = poiReq.openingHours() != null
+                            ? mapper.writeValueAsString(poiReq.openingHours())
+                            : null;
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException("JSON serialization failed", e);
+                }
+
+                savedPoi = new PoiEntity(
+                        null,
+                        poiReq.cityId(),
+                        poiReq.placeId(),
+                        poiReq.name(),
+                        poiReq.formattedAddress(),
+                        typesStr,
+                        poiReq.lat(),
+                        poiReq.lng(),
+                        openingHoursStr,
+                        poiReq.rating(),
+                        poiReq.userRatingsTotal(),
+                        poiReq.photoReference()
+                );
+                savedPoi = poiRepository.save(savedPoi);
+            }
+
+            // Save Route
+            RouteEntity route = new RouteEntity(
+                    null,
+                    dayPlan.planId(),
+                    savedPoi.poiId(),
+                    poiReq.visitOrder()
+            );
+            routeRepository.save(route);
+        }
     }
 
-    public List<DayPlanEntity> getByTripId(UUID tripId) {
-        return dayPlanRepository.findByTripId(tripId);
-    }
+    public List<DayPlanWithRouteResponse> getDayPlansWithRoutes(UUID tripId) {
+        List<DayPlanEntity> dayPlans = dayPlanRepository.findByTripId(tripId);
+        List<DayPlanWithRouteResponse> result = new ArrayList<>();
 
-    public Iterable<DayPlanEntity> getAll() {
-        return dayPlanRepository.findAll();
+        for (DayPlanEntity plan : dayPlans) {
+            List<RouteEntity> routes = routeRepository.findByPlanId(plan.planId());
+            routes.sort(Comparator.comparingInt(RouteEntity::visitOrder));
+
+            List<PoiWithOrderResponse> pois = routes.stream()
+                    .map(route -> {
+                        PoiEntity poi = poiRepository.findById(route.poiId())
+                                .orElseThrow(() -> new RuntimeException("POI not found"));
+
+                        ObjectMapper mapper = new ObjectMapper();
+
+                        JsonNode typesNode = null;
+                        JsonNode openingHours = null;
+
+                        try {
+                            if (poi.openingHours() != null) {
+                                openingHours = mapper.readTree(poi.openingHours());
+                            }
+                            if (poi.types() != null) {
+                                typesNode = mapper.readTree(poi.types());
+                            }
+                        } catch (JsonProcessingException e) {
+                            throw new RuntimeException("JSON parse failed", e);
+                        }
+
+                        return new PoiWithOrderResponse(
+                                poi.poiId(),
+                                poi.name(),
+                                poi.formattedAddress(),
+                                poi.lat(),
+                                poi.lng(),
+                                poi.rating(),
+                                poi.userRatingsTotal(),
+                                typesNode,
+                                poi.photoReference(),
+                                openingHours,
+                                route.visitOrder()
+                        );
+                    })
+                    .collect(Collectors.toList());
+
+            result.add(new DayPlanWithRouteResponse(
+                    plan.planId(),
+                    plan.dayNumber(),
+                    plan.planDate(),
+                    pois
+            ));
+        }
+
+        return result;
     }
 }
 

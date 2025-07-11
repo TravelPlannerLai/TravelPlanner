@@ -5,8 +5,12 @@ import com.laioffer.travelplanner.service.AuthService;
 import com.laioffer.travelplanner.entity.UsersEntity;
 import com.laioffer.travelplanner.repository.UsersRepository;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 
 import java.util.*;
 
@@ -36,9 +40,12 @@ public class UserController {
      * POST /api/user/register
      */
     @PostMapping("/api/user/register")
-    public ResponseEntity<Map<String,Object>> register(
-            @RequestBody RegisterRequest body) {
-
+    public ResponseEntity<?> register(
+            @RequestBody RegisterRequest body, BindingResult bindingResult
+    ) {
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.badRequest().body(bindingResult.getAllErrors());
+        }
         try {
             authService.signup(
                     body.username(),
@@ -74,6 +81,20 @@ public class UserController {
         }
         return ResponseEntity.ok(
                 Map.of("status", 200, "users", list)
+        );
+    }
+
+    @GetMapping("/api/user/me")
+    public Map<String, Object> getCurrentUser(@AuthenticationPrincipal User user) {
+        // findByEmail 返回 Optional<UsersEntity>
+        Optional<UsersEntity> optionalEntity = usersRepo.findByEmail(user.getUsername());
+        UsersEntity entity = optionalEntity.orElse(null);
+        if (entity == null) {
+            return Map.of("error", "User not found");
+        }
+        return Map.of(
+            "username", entity.username(),
+            "email", entity.email()
         );
     }
 }

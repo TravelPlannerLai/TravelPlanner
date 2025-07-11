@@ -4,10 +4,8 @@ import com.laioffer.travelplanner.entity.TripEntity;
 import com.laioffer.travelplanner.model.CreateTripRequest;
 import com.laioffer.travelplanner.service.AuthService;
 import com.laioffer.travelplanner.service.TripService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,14 +24,13 @@ public class TripController {
     }
 
     @PostMapping
-    public void createTrip(
+    public UUID createTrip(
             @AuthenticationPrincipal User user,
             @RequestBody CreateTripRequest request) {
 
         // get userId from authenticated user
         UUID userId = authService.getIdByEmail(user.getUsername());
-
-        tripService.createTrip(
+        return tripService.createTrip(
                 userId,
                 request.cityId(),
                 request.startDate(),
@@ -51,7 +48,6 @@ public class TripController {
             @AuthenticationPrincipal User user
     ) {
         UUID userId = authService.getIdByEmail(user.getUsername());
-        System.out.println(userId);
         return tripService.getTripsByUserId(userId);
     }
 
