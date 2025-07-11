@@ -91,6 +91,7 @@ const Sidebar = ({
       Cookies.remove("tripId");
       Cookies.remove("currentCity");
       Cookies.remove("placesByDay");
+      Cookies.remove("startDate");
 
       // 清除会话数据
       sessionStorage.clear();
@@ -229,7 +230,12 @@ const Sidebar = ({
                 savedRoutes.map((route) => (
                   <div
                 key={route.id}
-                onClick={() => onRouteSelect(route)}
+                onClick={() => {
+                    onRouteSelect(route);
+                    setTimeout(() => {
+                  window.location.reload();
+                }, 50); // 1000 ms = 1 second
+                }}
                 className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
                   selectedRoute?.id === route.id
                 ? "border-blue-300 bg-blue-50"

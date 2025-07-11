@@ -134,6 +134,8 @@ const Dashboard = () => {
     setCurrentCity(cityData.name || "Unknown City");
     Cookies.set("currentCity", cityData.name || "Unknown City", { expires: 7 });
     console.log("城市已设置为:", cityData.name || "Unknown City");
+    Cookies.set("startDate", route.startDate || new Date().toISOString().split("T")[0], { expires: 7 });
+    console.log("Start date set in cookies:", route.startDate || new Date().toISOString().split("T")[0]);
   };
 
   // 处理新路线保存
