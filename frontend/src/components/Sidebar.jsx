@@ -229,7 +229,7 @@ const Sidebar = ({
                 <h4 className="text-sm font-semibold text-gray-700 mb-3">
                 Saved Trips
                 </h4>
-                <div className="space-y-2 max-h-[31.5rem] overflow-y-auto">
+                <div className="space-y-2 max-h-[31.5rem] overflow-y-auto" id="saved-routes">
                 {isLoggedIn ? (
                   savedRoutes.length > 0 ? (
                 savedRoutes.map((route) => (

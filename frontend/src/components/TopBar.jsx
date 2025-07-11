@@ -9,57 +9,210 @@ import {
   Users,
   MapPin,
 } from "lucide-react";
-import html2canvas from 'html2canvas';
 
 const TopBar = ({
   currentCity,
   onCityChange,
+  savedRoutes,
 }) => {
   const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
   const [shareCopied, setShareCopied] = useState(false);
 
-  const handleShare = async () => {
+  // 处理城市按钮点击
+  const handleShareScreenshot = async () => {
     try {
-      // Find the main content area (adjust selector as needed)
-      const mainContent = document.querySelector('.main-content') || document.body;
-      await new Promise(resolve => setTimeout(resolve, 300));
+      if (!navigator.mediaDevices?.getDisplayMedia) {
+        throw new Error('Screen capture not supported in this browser');
+      }
       
-      const canvas = await html2canvas(mainContent, {
-        backgroundColor: '#ffffff',
-        scale: 2, // Higher quality
-        logging: false,
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { 
+          mediaSource: 'screen',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
       });
       
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      await video.play();
+      
+      // Give user time to position the screen
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      
+      // Stop the stream
+      stream.getTracks().forEach(track => track.stop());
+      
       canvas.toBlob(async (blob) => {
-        // Check if native sharing is supported
-        if (navigator.share) {
-          const file = new File([blob], `${currentCity}-itinerary.png`, { type: 'image/png' });
-          try {
-            await navigator.share({
-              title: `My ${currentCity} Travel Plan`,
-              text: 'Check out my travel itinerary!',
-              files: [file]
-            });
-            return;
-          } catch (shareErr) {
-            console.log('Native share failed, falling back to clipboard');
-          }
-        }
-        
-        // Fallback: copy to clipboard
-        const item = new ClipboardItem({ 'image/png': blob });
-        await navigator.clipboard.write([item]);
-        setShareCopied(true);
-        setTimeout(() => setShareCopied(false), 1500);
-        
-      }, 'image/png', 0.9);
+        downloadBlob(blob, `${currentCity}-travel-screenshot.png`);
+      });
       
     } catch (err) {
-      alert("Failed to capture screenshot: " + err.message);
+      console.error('Screen capture failed:', err);
+      alert('Screen capture failed. Please try copying the link instead.');
     }
   };
 
+  const handleShareStaticMap = async () => {
+    try {
+      
+      if (!savedRoutes || savedRoutes.length === 0) {
+        alert('No saved trips found to share!');
+        return;
+      }
+      
+      // Generate text content
+      const textContent = generateTripTextFile(savedRoutes, currentCity);
+      
+      // Create blob with text content
+      const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+      
+      // Try to share or download
+      if (navigator.share && navigator.canShare({ files: [new File([blob], 'temp.txt', { type: 'text/plain' })] })) {
+        const file = new File([blob], `${currentCity}-trips-${new Date().toISOString().slice(0, 10)}.txt`, { 
+          type: 'text/plain' 
+        });
+        
+        try {
+          await navigator.share({
+            title: `My ${currentCity} Travel Plans`,
+            text: 'Check out my travel itinerary!',
+            files: [file]
+          });
+        } catch (shareErr) {
+          console.log('Native share failed, downloading instead');
+          downloadBlob(blob, `${currentCity}-trips-${new Date().toISOString().slice(0, 10)}.txt`);
+        }
+      } else {
+        // Fallback: download the text file
+        downloadBlob(blob, `${currentCity}-trips-${new Date().toISOString().slice(0, 10)}.txt`);
+      }
+      
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 1500);
+      
+    } catch (err) {
+      console.error('Failed to share trips:', err);
+      alert('Failed to create trip file. Please try another option.');
+    }
+  };
+
+  // Helper function to generate formatted text content
+  const generateTripTextFile = (routes, city) => {
+    const header = `🌟 MY TRAVEL PLANS FOR ${city.toUpperCase()} 🌟\n`;
+    const timestamp = `Generated on: ${new Date().toLocaleString()}\n`;
+    const separator = '='.repeat(50) + '\n';
+    
+    let content = header + timestamp + separator + '\n';
+    
+    if (!routes || routes.length === 0) {
+      content += `📋 No saved trips found for ${city}.\n\n`;
+      content += `🌐 Visit: ${window.location.href} to start planning!\n`;
+      return content;
+    }
+    
+    routes.forEach((route, index) => {
+      content += `📍 TRIP ${index + 1}: ${route.name || 'Unnamed Trip'}\n`;
+      content += `🗓️  Start Date: ${route.startDate || 'Not specified'}\n`;
+      content += `📅  Duration: ${route.days || 'Not specified'} days\n`;
+      content += `🏙️  City: ${route.city || city}\n`;
+      if (route.tripId) {
+        content += `🆔  Trip ID: ${route.tripId}\n`;
+      }
+      content += '\n';
+      
+      if (route.places && route.places.length > 0) {
+        content += `📋 DETAILED ITINERARY:\n`;
+        
+        // Group places by planDate
+        const placesByDate = {};
+        route.places.forEach(place => {
+          const date = place.planDate || 'Unscheduled';
+          if (!placesByDate[date]) {
+            placesByDate[date] = [];
+          }
+          placesByDate[date].push(place);
+        });
+        
+        // Sort dates
+        const sortedDates = Object.keys(placesByDate).sort((a, b) => {
+          if (a === 'Unscheduled') return 1;
+          if (b === 'Unscheduled') return -1;
+          return new Date(a) - new Date(b);
+        });
+        
+        sortedDates.forEach((date, dateIndex) => {
+          if (date !== 'Unscheduled') {
+            content += `\n   📅 DAY ${dateIndex + 1} - ${date}\n`;
+            content += `   ${'─'.repeat(30)}\n`;
+          } else {
+            content += `\n   📝 UNSCHEDULED PLACES\n`;
+            content += `   ${'─'.repeat(30)}\n`;
+          }
+          
+          // Sort places by visitOrder
+          const sortedPlaces = placesByDate[date].sort((a, b) => {
+            const orderA = a.visitOrder || 999;
+            const orderB = b.visitOrder || 999;
+            return orderA - orderB;
+          });
+          
+          sortedPlaces.forEach((place, placeIndex) => {
+            const visitOrder = place.visitOrder || (placeIndex + 1);
+            content += `   ${visitOrder}. ${place.name}\n`;
+            
+            if (place.address && place.address !== "No address") {
+              content += `      📍 ${place.address}\n`;
+            }
+            
+            if (place.place_id || place.placeId) {
+              content += `      🆔 Place ID: ${place.place_id || place.placeId}\n`;
+            }
+            
+            if (place.notes) {
+              content += `      📝 Notes: ${place.notes}\n`;
+            }
+            
+            // Add some spacing between places
+            content += '\n';
+          });
+        });
+      } else {
+        content += `📋 No specific places added to this trip yet.\n\n`;
+      }
+      
+      // Add trip separator
+      content += '-'.repeat(50) + '\n\n';
+    });
+    
+    // Add footer
+    content += `📱 Generated by TravelPlanner App\n`;
+    content += `✈️ Happy travels! 🎒\n`;
+    
+    return content;
+  };
+
+  // Helper function to download blob
+  const downloadBlob = (blob, filename) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+    
 
   // 处理城市按钮点击
   const handleCityClick = () => {
@@ -153,24 +306,31 @@ const TopBar = ({
             </button>
 
             {/* 分享按钮 */}
-            <button
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2 transition-colors relative"
-              onClick={handleShare}
-            >
-              <Share2 size={16} />
-              <span className="text-sm font-medium">Share</span>
+            <div className="relative">
+              <button
+                onClick={handleShareStaticMap}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2 transition-colors"
+              >
+                <Share2 size={16} />
+                <span className="text-sm font-medium">Share Itinerary</span>
+              </button>
               {shareCopied && (
-                <span className="absolute top-0 right-0 bg-green-100 text-green-700 text-xs px-2 py-1 rounded shadow">
-                  Copied!
+                <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-100 text-green-700 text-xs px-2 py-1 rounded shadow z-50">
+                  Itinerary saved!
                 </span>
               )}
-            </button>
+            </div>
 
-            {/* 导出PDF按钮 */}
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2">
+            {/* 导出文件按钮 */}
+            <div className="relative">
+            <button 
+              onClick={handleShareScreenshot}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2"
+            >
               <Download size={16} />
-              <span>Export Itinerary</span>
+              <span>Download Screenshot</span>
             </button>
+          </div>
           </div>
         </div>
       </div>

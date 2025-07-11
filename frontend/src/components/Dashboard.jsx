@@ -247,6 +247,7 @@ const Dashboard = () => {
           onCityChange={handleCityChange}
           onDaysChange={setSelectedDays}
           selectedRoute={selectedRoute}
+          savedRoutes={savedRoutes}
         />
 
         {/* 地图区域 - 恢复完整的 MapArea */}
