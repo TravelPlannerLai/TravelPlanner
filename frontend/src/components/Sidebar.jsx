@@ -248,8 +248,11 @@ const Sidebar = ({
                   {route.places.map((place, idx) => {
                     const prevPlanDate = idx > 0 ? route.places[idx - 1].planDate : null;
                     const showDivider = idx > 0 && place.planDate !== prevPlanDate;
+                    // Generate a unique key for each list item
+                    const key = `${place.place_id || place.placeId || "noid"}-${place.planDate || "noplan"}-${place.visitOrder || idx}`;
+
                     return (
-                      <React.Fragment key={place.place_id || idx}>
+                      <React.Fragment key={key}>
                         {showDivider && (
                           <li>
                             <hr className="my-1 border-gray-300" />
