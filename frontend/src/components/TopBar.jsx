@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Calendar,
@@ -21,6 +21,7 @@ const TopBar = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
+
 
   // 处理城市按钮点击
   const handleCityClick = () => {
@@ -120,20 +121,27 @@ const TopBar = ({
 
           {/* 右侧：搜索和操作按钮 */}
           <div className="flex items-center space-x-3">
-            {/* 搜索框 */}
-            <div className="relative">
-              <Search
-                size={18}
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              />
-              <input
-                type="text"
-                placeholder="Search destinations..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-              />
-            </div>
+          {/*  /!* 搜索框 *!/*/}
+          {/*  <div className="relative">*/}
+          {/*    <Autocomplete*/}
+          {/*      onLoad={(ac) => (autoCompleteRef.current = ac)}*/}
+          {/*      onPlaceChanged={handlePlaceChanged}*/}
+          {/*      options={{*/}
+          {/*        bounds: new window.google.maps.LatLngBounds(*/}
+          {/*            { lat: 39.5, lng: 115.5 }, // southwest corner*/}
+          {/*            { lat: 41.5, lng: 117.5 }  // northeast corner*/}
+          {/*        ),*/}
+          {/*        strictBounds: true,*/}
+          {/*        componentRestrictions: { country: "cn" }, // 限制中国*/}
+          {/*      }}*/}
+          {/*    >*/}
+          {/*      <input*/}
+          {/*        type="text"*/}
+          {/*        placeholder="Search destinations..."*/}
+          {/*        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"*/}
+          {/*      />*/}
+          {/*    </Autocomplete>*/}
+          {/*  </div>*/}
 
             {/* 筛选按钮 */}
             <button

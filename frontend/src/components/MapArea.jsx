@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useImperativeHandle } from "react";
+import { useJsApiLoader, Autocomplete } from "@react-google-maps/api";
 import {
   Plus,
   Minus,
@@ -26,6 +27,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 // 使用你的 Google Maps API Key
 const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
+const delta = 0.5;
 
 
 export async function fetchCityCoordinates(cityName, apiKey) {
@@ -82,7 +84,7 @@ const GoogleMapComponent = React.forwardRef((props, ref) => {
     addPOIToBackend,
     cityCoordinates,
   } = props;
-  
+
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
@@ -388,6 +390,7 @@ const MapArea = ({
   const [currentDay, setCurrentDay] = useState(1);
   const [placesByDay, setPlacesByDay] = useState({ 1: [] });
   const [waypoints, setWaypoints] = useState([]);
+  const autoCompleteRef = useRef();
 
   const handleDayChange = (e) => {
     setCurrentDay(Number(e.target.value));
@@ -787,6 +790,62 @@ const MapArea = ({
     // 可选：清空本地数据或刷新 saved routes
   };
 
+  // load 搜索库
+  const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+    libraries: ["places"],
+  });
+
+  if (!isLoaded) return <div>Loading...</div>;
+
+
+  // 处理搜索选中
+  const handlePlaceChanged = () => {
+    const place = autoCompleteRef.current.getPlace();
+
+    if (!place.geometry) {
+      alert("Place not found!");
+      return;
+    }
+
+    // const lat = place.geometry.location.lat();
+    // const lng = place.geometry.location.lng();
+    // const name = place.name;
+
+    // const selectedPlace = {
+    //   name,
+    //   lat,
+    //   lng,
+    // };
+    const newPlace = {
+      name: place.name,
+      address:
+          place.formatted_address ||
+          place.vicinity ||
+          "No address",
+      lat: place.geometry.location.lat(),
+      lng: place.geometry.location.lng(),
+      place_id: place.place_id,
+      types: place.types || [],
+      price_level: place.price_level ?? null,
+      rating: place.rating ?? null,
+      user_ratings_total: place.user_ratings_total ?? null,
+      opening_hours: place.opening_hours
+          ? {
+            open_now: place.opening_hours.open_now,
+            weekday_text: place.opening_hours.weekday_text,
+          }
+          : null,
+      photo_reference:
+          place.photos && place.photos.length > 0
+              ? place.photos[0].getUrl()
+              : null,
+    };
+
+    addPlace(newPlace);
+
+  };
+
 
   const handleGenereteRoute = () => {
     const places = waypoints;
@@ -947,6 +1006,36 @@ const MapArea = ({
           <div>
             <strong>Attractions:</strong> {attractions.length}
           </div>
+        </div>
+
+        <div className="absolute top-4 right-[120px] z-20">
+          <Autocomplete
+            onLoad={(ac) => (autoCompleteRef.current = ac)}
+            onPlaceChanged={handlePlaceChanged}
+            options={
+              cityCoordinates[currentCity]
+                ? {
+                    bounds: new window.google.maps.LatLngBounds(
+                        { lat: cityCoordinates[currentCity].lat - delta, lng: cityCoordinates[currentCity].lng - delta },// southwest corner
+                        { lat: cityCoordinates[currentCity].lat + delta, lng: cityCoordinates[currentCity].lng + delta }  // northeast corner
+                    ),
+                    strictBounds: true,
+                  }
+                : {}
+            }
+          >
+            <input
+                type="text"
+                placeholder="Search destinations..."
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+            />
+            {/*<input*/}
+            {/*    type="text"*/}
+            {/*    placeholder="Search places..."*/}
+            {/*    className="flex-1 border border-gray-300 p-2 rounded text-sm"*/}
+            {/*/>*/}
+          </Autocomplete>
+
         </div>
 
         {/* 地图控制按钮 */}
