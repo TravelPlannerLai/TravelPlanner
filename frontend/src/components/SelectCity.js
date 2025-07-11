@@ -28,6 +28,7 @@ function SelectCity() {
     if (selectedCity && selectedCity !== currentCity) {
       // 如果 selectedCity 变化了，清除 placesByDay cookie
       Cookies.remove("placesByDay");
+      Cookies.remove("startDate");
       flag = true;
     }
     console.log("Flag for placesByDay cookie:", flag);

@@ -4,6 +4,7 @@ import com.laioffer.travelplanner.entity.TripEntity;
 import com.laioffer.travelplanner.model.CreateTripRequest;
 import com.laioffer.travelplanner.service.AuthService;
 import com.laioffer.travelplanner.service.TripService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
@@ -51,6 +52,13 @@ public class TripController {
         UUID userId = authService.getIdByEmail(user.getUsername());
         return tripService.getTripsByUserId(userId);
     }
+
+    @DeleteMapping("/{tripId}")
+    public ResponseEntity<Void> deleteTrip(@AuthenticationPrincipal User user, @PathVariable UUID tripId) {
+        tripService.deleteTrip(tripId);
+        return ResponseEntity.noContent().build();
+    }
+
 
 
 }

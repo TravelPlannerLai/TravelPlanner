@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { Trash2 } from "react-feather"; 
 import {
   ChevronLeft,
   ChevronRight,
@@ -19,6 +20,7 @@ const Sidebar = ({
   savedRoutes,
   onRouteSelect,
   selectedRoute,
+  onDeleteRoute,
 }) => {
   const navigate = useNavigate();
 
@@ -89,6 +91,7 @@ const Sidebar = ({
       Cookies.remove("tripId");
       Cookies.remove("currentCity");
       Cookies.remove("placesByDay");
+      Cookies.remove("startDate");
 
       // 清除会话数据
       sessionStorage.clear();
@@ -227,14 +230,19 @@ const Sidebar = ({
                 savedRoutes.map((route) => (
                   <div
                 key={route.id}
-                onClick={() => onRouteSelect(route)}
+                onClick={() => {
+                    onRouteSelect(route);
+                    setTimeout(() => {
+                  window.location.reload();
+                }, 50); // 1000 ms = 1 second
+                }}
                 className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
                   selectedRoute?.id === route.id
                 ? "border-blue-300 bg-blue-50"
                 : "border-gray-200 hover:border-gray-300"
                 }`}
                   >
-                <div className="text-xs text-gray-500 mb-1">
+                <div className="text-xs text-gray-500 mb-1 ">
                 <span className="font-semibold">Trip Name:</span> {route.name || "No Name"}
                 <ul className="ml-4 mt-1 space-y-1 list-none">
                   {route.places.map((place, idx) => {
@@ -264,16 +272,26 @@ const Sidebar = ({
                 </div>
                 {/* Show startDate, days, city name, and plan_date */}
           <div className="flex items-center text-xs text-gray-600 mb-1">
+            <span className="mr-3">
+          <button
+            className="ml-2 text-red-500 hover:text-red-700"
+            onClick={e => {
+              e.stopPropagation(); // Prevent selecting the route when deleting
+              onDeleteRoute(route.id, route.tripId);
+            }}
+            title="Delete this trip"
+          >
+            <Trash2 size={16} />
+          </button>
+          </span>
             {route.startDate && (
               <span className="mr-3">
           <span className="font-semibold">Start:</span> {route.startDate}
               </span>
             )}
-            {route.days && (
-              <span className="mr-3">
+          <span className="mr-3">
           <span className="font-semibold">Days:</span> {route.days}
-              </span>
-            )}
+          </span>
           </div>
               </div>
             ))

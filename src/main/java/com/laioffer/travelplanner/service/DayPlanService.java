@@ -151,7 +151,8 @@ public class DayPlanService {
                                 typesNode,
                                 poi.photoReference(),
                                 openingHours,
-                                route.visitOrder()
+                                route.visitOrder(),
+                                poi.placeId()
                         );
                     })
                     .collect(Collectors.toList());
@@ -165,6 +166,18 @@ public class DayPlanService {
         }
 
         return result;
+    }
+
+    public void deleteByTripId(UUID tripId) {
+        // Find all day plans associated with the given tripId
+        List<DayPlanEntity> plans = dayPlanRepository.findByTripId(tripId);
+
+        // Delete all associated routes for each day plan
+        plans.forEach(dayPlan -> routeRepository.deleteByPlanId(dayPlan.planId()));
+
+        // Delete all day plans
+        dayPlanRepository.deleteByTripId(tripId);
+
     }
 }
 

@@ -32,15 +32,6 @@ const TopBar = ({
     });
   };
 
-  const dayOptions = [
-    { value: "1day", label: "1 Day Trip" },
-    { value: "2days", label: "2 Days" },
-    { value: "3days", label: "3 Days" },
-    { value: "5days", label: "5 Days" },
-    { value: "7days", label: "1 Week" },
-    { value: "14days", label: "2 Weeks" },
-  ];
-
   const popularCities = [
     "Paris",
     "London",
@@ -104,17 +95,6 @@ const TopBar = ({
             {/* 行程天数选择 */}
             <div className="flex items-center space-x-2">
               <Calendar size={18} className="text-gray-500" />
-              <select
-                value={selectedDays}
-                onChange={(e) => onDaysChange(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {dayOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
 
