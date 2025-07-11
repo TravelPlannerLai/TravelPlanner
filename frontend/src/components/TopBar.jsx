@@ -9,6 +9,7 @@ import {
   Users,
   MapPin,
 } from "lucide-react";
+import { jsPDF } from "jspdf";
 
 const TopBar = ({
   currentCity,
@@ -18,9 +19,27 @@ const TopBar = ({
   const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
   const [shareCopied, setShareCopied] = useState(false);
+  const [showScreenshotDropdown, setShowScreenshotDropdown] = useState(false);
 
-  // 处理城市按钮点击
-  const handleShareScreenshot = async () => {
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showScreenshotDropdown && !event.target.closest('.screenshot-dropdown')) {
+        setShowScreenshotDropdown(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showScreenshotDropdown]);
+
+  // 处理分享按钮点击
+  const handleScreenshotPNG = async () => {
+    setShowScreenshotDropdown(false);
+    
+    window.tempFormatDialog = () => Promise.resolve('png');
+    
     try {
       if (!navigator.mediaDevices?.getDisplayMedia) {
         throw new Error('Screen capture not supported in this browser');
@@ -38,7 +57,6 @@ const TopBar = ({
       video.srcObject = stream;
       await video.play();
       
-      // Give user time to position the screen
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       const canvas = document.createElement('canvas');
@@ -48,16 +66,94 @@ const TopBar = ({
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0);
       
-      // Stop the stream
       stream.getTracks().forEach(track => track.stop());
       
-      canvas.toBlob(async (blob) => {
-        downloadBlob(blob, `${currentCity}-travel-screenshot.png`);
-      });
+      // Directly convert to PNG
+      await convertAndDownload(canvas, 'png');
       
     } catch (err) {
       console.error('Screen capture failed:', err);
-      alert('Screen capture failed. Please try copying the link instead.');
+      alert('Screen capture failed. Please try again.');
+    }
+  };
+
+  const handleScreenshotJPEG = async () => {
+    setShowScreenshotDropdown(false);
+    
+    try {
+      if (!navigator.mediaDevices?.getDisplayMedia) {
+        throw new Error('Screen capture not supported in this browser');
+      }
+      
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { 
+          mediaSource: 'screen',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
+      });
+      
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      await video.play();
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      
+      stream.getTracks().forEach(track => track.stop());
+      
+      // Directly convert to JPEG
+      await convertAndDownload(canvas, 'jpeg');
+      
+    } catch (err) {
+      console.error('Screen capture failed:', err);
+      alert('Screen capture failed. Please try again.');
+    }
+  };
+
+  const handleScreenshotPDF = async () => {
+    setShowScreenshotDropdown(false);
+    
+    try {
+      if (!navigator.mediaDevices?.getDisplayMedia) {
+        throw new Error('Screen capture not supported in this browser');
+      }
+      
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { 
+          mediaSource: 'screen',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
+      });
+      
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      await video.play();
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      
+      stream.getTracks().forEach(track => track.stop());
+      
+      // Directly convert to PDF
+      await convertAndDownload(canvas, 'pdf');
+      
+    } catch (err) {
+      console.error('Screen capture failed:', err);
+      alert('Screen capture failed. Please try again.');
     }
   };
 
@@ -212,6 +308,62 @@ const TopBar = ({
     URL.revokeObjectURL(url);
   };
 
+  // Function to convert canvas to different formats
+  const convertAndDownload = async (canvas, format) => {
+    switch (format) {
+      case 'png':
+        canvas.toBlob((blob) => {
+          downloadBlob(blob, `${currentCity}-screenshot.png`);
+        }, 'image/png', 1.0);
+        break;
+        
+      case 'jpeg':
+        canvas.toBlob((blob) => {
+          downloadBlob(blob, `${currentCity}-screenshot.jpg`);
+        }, 'image/jpeg', 0.9); // 0.9 quality for smaller file size
+        break;
+        
+      case 'pdf':
+        await convertToPDF(canvas);
+        break;
+        
+      default:
+        canvas.toBlob((blob) => {
+          downloadBlob(blob, `${currentCity}-screenshot.png`);
+        }, 'image/png');
+    }
+  };
+
+  // Function to convert canvas to PDF
+  const convertToPDF = async (canvas) => {
+    // Convert canvas to image data
+    const imgData = canvas.toDataURL('image/jpeg', 0.9);
+    const pdf = new jsPDF();
+    
+    // Calculate dimensions to fit page
+    const imgWidth = 210; // A4 width in mm
+    const pageHeight = 295; // A4 height in mm
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    
+    let position = 0;
+    
+    // Add image to PDF
+    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+    
+    // Add more pages if needed
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+    
+    // Download PDF
+    pdf.save(`${currentCity}-screenshot.pdf`);
+  };
+
     
 
   // 处理城市按钮点击
@@ -312,25 +464,68 @@ const TopBar = ({
                 className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2 transition-colors"
               >
                 <Share2 size={16} />
-                <span className="text-sm font-medium">Share Itinerary</span>
+                <span className="text-sm font-medium">Share trips</span>
               </button>
               {shareCopied && (
                 <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-100 text-green-700 text-xs px-2 py-1 rounded shadow z-50">
-                  Itinerary saved!
+                  Trips saved!
                 </span>
               )}
             </div>
 
             {/* 导出文件按钮 */}
-            <div className="relative">
-            <button 
-              onClick={handleShareScreenshot}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2"
-            >
-              <Download size={16} />
-              <span>Download Screenshot</span>
-            </button>
-          </div>
+            <div className="relative screenshot-dropdown">
+              <button 
+                onClick={() => setShowScreenshotDropdown(!showScreenshotDropdown)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2"
+              >
+                <Download size={16} />
+                <span>Download Screenshot</span>
+                <svg 
+                  className={`w-4 h-4 transition-transform ${showScreenshotDropdown ? 'rotate-180' : ''}`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {showScreenshotDropdown && (
+                <div className="absolute top-full right-0 mt-2 w-56 bg-white border rounded-lg shadow-lg z-50">
+                  <button
+                    onClick={handleScreenshotPNG}
+                    className="w-full px-4 py-2 text-left hover:bg-gray-50 rounded-t-lg flex items-center space-x-2"
+                  >
+                    <span>📸</span>
+                    <div>
+                      <div className="font-medium">PNG Format</div>
+                      <div className="text-xs text-gray-500">High quality, larger file</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={handleScreenshotJPEG}
+                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-2"
+                  >
+                    <span>🖼️</span>
+                    <div>
+                      <div className="font-medium">JPEG Format</div>
+                      <div className="text-xs text-gray-500">Smaller file, good quality</div>
+                    </div>
+                  </button>
+                  <button
+                    onClick={handleScreenshotPDF}
+                    className="w-full px-4 py-2 text-left hover:bg-gray-50 rounded-b-lg flex items-center space-x-2"
+                  >
+                    <span>📄</span>
+                    <div>
+                      <div className="font-medium">PDF Document</div>
+                      <div className="text-xs text-gray-500">Document format</div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
