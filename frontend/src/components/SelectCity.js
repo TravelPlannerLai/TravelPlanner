@@ -81,7 +81,6 @@ function SelectCity() {
         alert("Failed to get city info!");
         return;
       }
-        
       if (days <= 0) {
         alert("Please select a valid date range!");
         return;

@@ -83,7 +83,7 @@ const GoogleMapComponent = React.forwardRef((props, ref) => {
     addPOIToBackend,
     cityCoordinates,
   } = props;
-  
+
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
@@ -325,10 +325,11 @@ const GoogleMapComponent = React.forwardRef((props, ref) => {
 // 主 MapArea 组件
 const MapArea = ({
   currentCity,
-  selectedDays,
-  selectedRoute,
+  // selectedDays,
+  // selectedRoute,
   onSaveRoute,
-  tripDays = 10,
+  tripDays = 0,
+  // setTripDays = () => {}, // Function to set trip days, default to no-op
 }) => {
   const [showAIAssistant, setShowAIAssistant] = useState(true);
   const [currentDay, setCurrentDay] = useState(() => {
@@ -339,10 +340,32 @@ const MapArea = ({
   useEffect(() => {
     Cookies.set("currentDay", currentDay, { expires: 7 });
   }, [currentDay]);
-  
+
   const [placesByDay, setPlacesByDay] = useState({ 1: [] });
   const [waypoints, setWaypoints] = useState([]);
   const autoCompleteRef = useRef();
+
+  // // If tripDays is 0, fetch from API using tripId in cookies
+  console.log("Trip days:", tripDays);
+  // useEffect(() => {
+  //   if (tripDays === 0) {
+  //     const tripId = Cookies.get("tripId");
+  //     if (tripId) {
+  //       fetch(`/api/trips/${tripId}`, { credentials: "include" })
+  //         .then(res => res.json())
+  //         .then(data => {
+  //           if (data && data.days) {
+  //             setTripDays(data.days);
+  //             // Optionally set currentDay to 1 or a valid day
+  //             console.log("Fetched trip days from API:", data.days);
+  //           }
+  //         })
+  //         .catch(err => {
+  //           console.error("Failed to fetch trip info:", err);
+  //         });
+  //     }
+  //   }
+  // }, [tripDays, setTripDays]);
 
   const handleDayChange = (e) => {
     console.log("Changing current day to:", e.target.value);
@@ -535,6 +558,7 @@ const MapArea = ({
       // Optionally: update placesByDay[currentDay] order here as well!
     }
   }
+
   const dayKeys = Array.from({ length: tripDays }, (_, i) => (i + 1).toString());
   // Wrap `addPlace` in useCallback
   const addPlace = React.useCallback(
@@ -963,6 +987,7 @@ const MapArea = ({
             {/*    className="flex-1 border border-gray-300 p-2 rounded text-sm"*/}
             {/*/>*/}
           </Autocomplete>
+
         </div>
 
         {/* 地图控制按钮 */}
