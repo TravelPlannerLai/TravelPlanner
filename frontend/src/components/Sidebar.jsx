@@ -7,7 +7,7 @@ import {
   User,
   Route,
   // Map,
-  // MessageSquare,
+  MessageSquare,
   // Heart,
   Settings,
   LogOut,
@@ -40,6 +40,13 @@ const Sidebar = ({
     } else {
       console.error("onToggle function not provided");
     }
+  };
+
+  const handleTravelAssistantClick = () => {
+    // Dispatch custom event to show Travel Assistant in MapArea
+    window.dispatchEvent(new CustomEvent('showTravelAssistant', { 
+      detail: { isMinimized: false } 
+    }));
   };
 
   // 获取 username
@@ -124,12 +131,13 @@ const Sidebar = ({
     //   icon: Map,
     //   type: "menu",
     // },
-    // {
-    //   id: "chat",
-    //   label: "Travel Assistant",
-    //   icon: MessageSquare,
-    //   type: "menu",
-    // },
+    {
+      id: "chat",
+      label: "Travel Assistant",
+      icon: MessageSquare,
+      type: "menu",
+      onClick: handleTravelAssistantClick,
+    },
     // {
     //   id: "favorites",
     //   label: "Favorites",
@@ -188,40 +196,41 @@ const Sidebar = ({
 
         {/* 主导航菜单 */}
         <div className="flex-1 py-4">
-          {menuItems.map((item) => (
-            <div key={item.id} className="px-4 mb-2">
-          <button
-            className={`w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group ${
-              item.active
-            ? "bg-blue-50 text-blue-600 border-r-2 border-blue-500"
-            : "text-gray-600"
-            }`}
-          >
-            <div className="flex items-center">
-              <item.icon
-            size={20}
-            className={`${
-              item.active ? "text-blue-600" : "text-gray-500"
-            } group-hover:text-blue-600`}
-              />
-              {!collapsed && (
-            <span className="ml-3 font-medium">{item.label}</span>
+        {menuItems.map((item) => (
+          <div key={item.id} className="px-4 mb-2">
+            <button
+              onClick={item.onClick || (() => {})} // Add onClick handler
+              className={`w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group ${
+                item.active
+                  ? "bg-blue-50 text-blue-600 border-r-2 border-blue-500"
+                  : "bg-gray-50 text-gray-600"
+              }`}
+            >
+              <div className="flex items-center">
+                <item.icon
+                  size={20}
+                  className={`${
+                    item.active ? "text-blue-600" : "text-gray-500"
+                  } group-hover:text-blue-600`}
+                />
+                {!collapsed && (
+                  <span className="ml-3 font-medium">{item.label}</span>
+                )}
+              </div>
+              {!collapsed && item.count && (
+                <span
+                  className={`px-2 py-1 text-xs rounded-full ${
+                    item.active
+                      ? "bg-blue-100 text-blue-600"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {item.count}
+                </span>
               )}
-            </div>
-            {!collapsed && item.count && (
-              <span
-            className={`px-2 py-1 text-xs rounded-full ${
-              item.active
-          ? "bg-blue-100 text-blue-600"
-          : "bg-gray-100 text-gray-600"
-            }`}
-              >
-            {item.count}
-              </span>
-            )}
-          </button>
-            </div>
-          ))}
+            </button>
+          </div>
+        ))}
 
           {/* 保存的路线列表 */}
                 {!collapsed && (

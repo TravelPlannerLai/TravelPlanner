@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useImperativeHandle } from "react";
 import { useJsApiLoader, Autocomplete } from "@react-google-maps/api";
+import aiService from './AIService';
 import {
   MapPin,
-  // Bot,
+  Bot,
   Save,
 } from "lucide-react";
 import Cookies from "js-cookie";
@@ -327,7 +328,11 @@ const MapArea = ({
   tripDays = 0,
   // setTripDays = () => {}, // Function to set trip days, default to no-op
 }) => {
-  // const [showAIAssistant, setShowAIAssistant] = useState(true);
+  const [showAIAssistant, setShowAIAssistant] = useState(true);
+  const [aiResponse, setAiResponse] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiResponseType, setAiResponseType] = useState('');
+  const [isMinimized, setIsMinimized] = useState(true);
   const [currentDay, setCurrentDay] = useState(() => {
     const cookieDay = Cookies.get("currentDay");
     return cookieDay ? cookieDay : 1;
@@ -340,28 +345,7 @@ const MapArea = ({
   const [placesByDay, setPlacesByDay] = useState({ 1: [] });
   const [waypoints, setWaypoints] = useState([]);
   const autoCompleteRef = useRef();
-
-  // // If tripDays is 0, fetch from API using tripId in cookies
-  console.log("Trip days:", tripDays);
-  // useEffect(() => {
-  //   if (tripDays === 0) {
-  //     const tripId = Cookies.get("tripId");
-  //     if (tripId) {
-  //       fetch(`/api/trips/${tripId}`, { credentials: "include" })
-  //         .then(res => res.json())
-  //         .then(data => {
-  //           if (data && data.days) {
-  //             setTripDays(data.days);
-  //             // Optionally set currentDay to 1 or a valid day
-  //             console.log("Fetched trip days from API:", data.days);
-  //           }
-  //         })
-  //         .catch(err => {
-  //           console.error("Failed to fetch trip info:", err);
-  //         });
-  //     }
-  //   }
-  // }, [tripDays, setTripDays]);
+    
 
   const handleDayChange = (e) => {
     console.log("Changing current day to:", e.target.value);
@@ -372,6 +356,22 @@ const MapArea = ({
   const [cityCoordinates, setCityCoordinates] = useState({});
   const mapRef = useRef(null);
   const directionsRendererRef = useRef(null);
+
+  useEffect(() => {
+    const handleShowAssistant = (event) => {
+      setShowAIAssistant(true);
+      // Check if detail exists and use it, otherwise default to false (expanded)
+      const shouldMinimize = event.detail?.isMinimized ?? false;
+      setIsMinimized(shouldMinimize);
+    };
+
+    // Listen for custom event from sidebar
+    window.addEventListener('showTravelAssistant', handleShowAssistant);
+    
+    return () => {
+      window.removeEventListener('showTravelAssistant', handleShowAssistant);
+    };
+  }, []);
 
   // Restore placesByDay and waypoints from cookie on mount
   useEffect(() => {
@@ -910,6 +910,99 @@ const MapArea = ({
       }
     );
   };
+
+  const handleAIPlanRoute = async () => {
+    setIsAiLoading(true);
+    setAiResponseType('route_planning');
+    
+    try {
+      const result = await aiService.planRoute(currentCity, waypoints);
+      if (result.success) {
+        setAiResponse(result.response);
+      } else {
+        setAiResponse(result.error);
+      }
+    } catch (error) {
+      setAiResponse('Sorry, there was an error processing your request.');
+    }
+    
+    setIsAiLoading(false);
+  };
+  
+  const handleAIFindFood = async () => {
+    setIsAiLoading(true);
+    setAiResponseType('restaurant_recommendations');
+    
+    try {
+      const result = await aiService.findRestaurants(currentCity, waypoints);
+      if (result.success) {
+        setAiResponse(result.response);
+      } else {
+        setAiResponse(result.error);
+      }
+    } catch (error) {
+      setAiResponse('Sorry, there was an error finding restaurants.');
+    }
+    
+    setIsAiLoading(false);
+  };
+
+  const handleAIWeather = async () => {
+    setIsAiLoading(true);
+    setAiResponseType('weather_advice');
+    
+    try {
+      const result = await aiService.getWeatherAdvice(currentCity);
+      if (result.success) {
+        setAiResponse(result.response);
+      } else {
+        setAiResponse(result.error);
+      }
+    } catch (error) {
+      setAiResponse('Sorry, there was an error getting weather advice.');
+    }
+    
+    setIsAiLoading(false);
+  };
+
+  const handleAITips = async () => {
+    setIsAiLoading(true);
+    setAiResponseType('travel_tips');
+    
+    try {
+      const result = await aiService.getTravelTips(currentCity);
+      if (result.success) {
+        setAiResponse(result.response);
+      } else {
+        setAiResponse(result.error);
+      }
+    } catch (error) {
+      setAiResponse('Sorry, there was an error getting travel tips.');
+    }
+    
+    setIsAiLoading(false);
+  };
+
+  const handleAIQuestion = async (question) => {
+    if (!question.trim()) return;
+    
+    setIsAiLoading(true);
+    setAiResponseType('general_question');
+    
+    try {
+      const result = await aiService.askQuestion(currentCity, question, waypoints);
+      if (result.success) {
+        setAiResponse(result.response);
+      } else {
+        setAiResponse(result.error);
+      }
+    } catch (error) {
+      setAiResponse('Sorry, there was an error processing your question.');
+    }
+    
+    setIsAiLoading(false);
+  };
+
   // API Key 检查
   if (!GOOGLE_MAPS_API_KEY) {
     return (
@@ -1058,64 +1151,249 @@ const MapArea = ({
         </div>
 
         {/* AI旅行助手 */}
-        {/* {showAIAssistant && (
-          <div className="absolute bottom-4 right-4 bg-white rounded-lg shadow-xl p-4 max-w-sm z-10">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-gray-800 flex items-center">
-                <Bot className="mr-2 text-purple-600" size={20} />
-                Travel Assistant
-              </h3>
+        {showAIAssistant && (
+          <div 
+            className={`absolute bottom-4 right-20 bg-white rounded-lg shadow-xl transition-all duration-300 z-10 ${
+              isMinimized 
+                ? 'w-14 h-14' 
+                : 'p-4 max-w-sm w-80 max-h-200 overflow-y-auto'
+            }`}
+          >
+            {/* Minimized view */}
+            {isMinimized ? (
               <button
-                onClick={() => setShowAIAssistant(false)}
-                className="text-gray-400 hover:text-gray-600"
+                onClick={() => setIsMinimized(false)}
+                className="w-full h-full flex items-center justify-center text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors relative"
+                title="Expand Travel Assistant"
               >
-                ×
+                <Bot size={24} />
+                {/* Notification dot */}
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-xs text-white">
+                  !
+                </span>
               </button>
-            </div>
-
-            <div className="space-y-3">
-              <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-3 rounded-lg">
-                <p className="text-sm text-gray-700 mb-2">
-                  👋 Hi! I'm your AI travel assistant. I can help you:
-                </p>
-                <ul className="text-xs text-gray-600 space-y-1">
-                  <li>• Find the best routes between attractions</li>
-                  <li>• Suggest optimal visiting times</li>
-                  <li>• Recommend nearby restaurants</li>
-                  <li>• Check weather conditions</li>
-                </ul>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <button className="px-3 py-2 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 transition-colors text-sm font-medium">
-                  🗺️ Plan Route
-                </button>
-                <button className="px-3 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors text-sm font-medium">
-                  🍽️ Find Food
-                </button>
-                <button className="px-3 py-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors text-sm font-medium">
-                  ☀️ Weather
-                </button>
-                <button className="px-3 py-2 bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors text-sm font-medium">
-                  💡 Tips
-                </button>
-              </div>
-
-              <div className="border-t pt-3">
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    placeholder="Ask me anything..."
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                  <button className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
-                    →
-                  </button>
+            ) : (
+              /* Expanded view */
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-bold text-gray-800 flex items-center">
+                    <Bot className="mr-2 text-purple-600" size={20} />
+                    AI Travel Assistant
+                  </h3>
+                  <div className="flex items-center space-x-1">
+                    <button
+                      onClick={() => setIsMinimized(true)}
+                      className="text-gray-400 hover:text-gray-600 p-1"
+                      title="Minimize"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M6 9l6 6 6-6"/>
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowAIAssistant(false);
+                        setAiResponse('');
+                      }}
+                      className="text-gray-400 hover:text-gray-600 p-1"
+                      title="Close"
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </div>
+
+                <div className="space-y-3">
+                  {/* AI Response Display */}
+                  {(aiResponse || isAiLoading) && (
+                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-lg border border-gray-200 max-h-48 overflow-y-auto shadow-inner">
+                      {isAiLoading ? (
+                        <div className="flex items-center space-x-3">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+                          <span className="text-xs text-gray-600 font-medium">AI is thinking...</span>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-gray-800">
+                          {/* Response Type Badge */}
+                          <div className="mb-3 flex justify-start">
+                            <span className="text-purple-700 bg-purple-100 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide border border-purple-200">
+                              {aiResponseType.replace('_', ' ')}
+                            </span>
+                          </div>
+                          
+                          {/* Formatted Response Content */}
+                          <div className="space-y-2 text-left">
+                            {aiResponse.split('\n').map((line, index) => {
+                              const trimmedLine = line.trim();
+                              
+                              // Skip empty lines
+                              if (!trimmedLine) {
+                                return <div key={index} className="h-1"></div>;
+                              }
+                              
+                              // Main headings (lines with all caps or ending with colon)
+                              if (trimmedLine.match(/^[A-Z\s]+:$/) || trimmedLine.endsWith(':')) {
+                                return (
+                                  <h4 key={index} className="font-bold text-gray-900 mt-3 mb-1 text-left border-b border-gray-300 pb-1">
+                                    {trimmedLine}
+                                  </h4>
+                                );
+                              }
+                              
+                              // Numbered lists (1. 2. 3. etc.)
+                              if (trimmedLine.match(/^\d+\./)) {
+                                const number = trimmedLine.match(/^\d+/)[0];
+                                const content = trimmedLine.replace(/^\d+\.\s*/, '');
+                                return (
+                                  <div key={index} className="flex items-start space-x-3 py-1 ml-2">
+                                    <span className="flex-shrink-0 w-6 h-6 bg-purple-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                                      {number}
+                                    </span>
+                                    <span className="flex-1 text-left leading-relaxed text-gray-700">
+                                      {content}
+                                    </span>
+                                  </div>
+                                );
+                              }
+                              
+                              // Bullet points
+                              if (trimmedLine.match(/^[•·\-*]\s/)) {
+                                const content = trimmedLine.replace(/^[•·\-*]\s*/, '');
+                                return (
+                                  <div key={index} className="flex items-start space-x-3 py-1 ml-4">
+                                    <span className="flex-shrink-0 w-2 h-2 bg-purple-400 rounded-full mt-2"></span>
+                                    <span className="flex-1 text-left leading-relaxed text-gray-700">
+                                      {content}
+                                    </span>
+                                  </div>
+                                );
+                              }
+
+                              // Bold text (text between ** **)
+                              if (trimmedLine.includes('**')) {
+                                const parts = trimmedLine.split(/\*\*(.*?)\*\*/g);
+                                return (
+                                  <div key={index} className="text-left leading-relaxed py-0.5">
+                                    {parts.map((part, partIndex) => 
+                                      partIndex % 2 === 1 ? (
+                                        <strong key={partIndex} className="font-semibold text-gray-900">
+                                          {part}
+                                        </strong>
+                                      ) : (
+                                        <span key={partIndex} className="text-gray-700">{part}</span>
+                                      )
+                                    )}
+                                  </div>
+                                );
+                              }
+                              
+                              // Regular paragraphs
+                              return (
+                                <p key={index} className="text-left leading-relaxed text-gray-700 py-0.5">
+                                  {trimmedLine}
+                                </p>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Welcome Message */}
+                  {!aiResponse && !isAiLoading && (
+                    <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-3 rounded-lg">
+                      <p className=" text-gray-700 mb-2">
+                        🤖 Hi! I'm your AI travel assistant powered by OpenAI. I can help you:
+                      </p>
+                      <ul className="text-xs text-gray-600 space-y-1">
+                        <li>• Plan optimal routes between attractions</li>
+                        <li>• Find the best local restaurants</li>
+                        <li>• Give weather-based recommendations</li>
+                        <li>• Share insider travel tips</li>
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={handleAIPlanRoute}
+                      disabled={isAiLoading || waypoints.length < 2}
+                      className="px-3 py-2 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 transition-colors text-sm font-medium disabled:opacity-50"
+                    >
+                      🗺️ Plan Route
+                    </button>
+                    <button 
+                      onClick={handleAIFindFood}
+                      disabled={isAiLoading}
+                      className="px-3 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors text-sm font-medium disabled:opacity-50"
+                    >
+                      🍽️ Find Food
+                    </button>
+                    <button 
+                      onClick={handleAIWeather}
+                      disabled={isAiLoading}
+                      className="px-3 py-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors text-sm font-medium disabled:opacity-50"
+                    >
+                      ☀️ Weather
+                    </button>
+                    <button 
+                      onClick={handleAITips}
+                      disabled={isAiLoading}
+                      className="px-3 py-2 bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors text-sm font-medium disabled:opacity-50"
+                    >
+                      💡 Tips
+                    </button>
+                  </div>
+
+                  {/* Chat Input */}
+                  <div className="border-t pt-3">
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        placeholder="Ask me anything about travel..."
+                        disabled={isAiLoading}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && !isAiLoading) {
+                            const question = e.target.value;
+                            e.target.value = '';
+                            handleAIQuestion(question);
+                          }
+                        }}
+                      />
+                      <button 
+                        onClick={(e) => {
+                          if (!isAiLoading) {
+                            const input = e.target.parentElement.querySelector('input');
+                            const question = input.value;
+                            input.value = '';
+                            handleAIQuestion(question);
+                          }
+                        }}
+                        disabled={isAiLoading}
+                        className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors disabled:opacity-50"
+                      >
+                        →
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Clear Response Button */}
+                  {aiResponse && !isAiLoading && (
+                    <button
+                      onClick={() => setAiResponse('')}
+                      className="w-full text-xs text-gray-500 hover:text-gray-700 py-1"
+                    >
+                      Clear Response
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
-        )} */}
+        )}
       </div>
     </div>
   );
