@@ -243,7 +243,7 @@ const Sidebar = ({
                   savedRoutes.length > 0 ? (
                 savedRoutes.map((route) => (
                   <div
-                key={route.id}
+                key={route.tripId || route.id} // Use tripId if available, otherwise id
                 onClick={() => {
                     onRouteSelect(route);
                     setTimeout(() => {

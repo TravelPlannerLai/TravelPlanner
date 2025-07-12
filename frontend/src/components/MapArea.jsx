@@ -1038,14 +1038,8 @@ const MapArea = ({
         {/* 调试信息 - 临时显示 */}
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white p-3 rounded shadow-lg text-xs z-20">
           <div>
-            <strong>Current City:</strong> {currentCity}
-          </div>
-          <div>
-            <strong>Coordinates:</strong>{" "}
+            <strong>City Coordinates:</strong>{" "}
             {JSON.stringify(cityCoordinates[currentCity])}
-          </div>
-          <div>
-            <strong>Attractions:</strong> {attractions.length}
           </div>
         </div>
 
