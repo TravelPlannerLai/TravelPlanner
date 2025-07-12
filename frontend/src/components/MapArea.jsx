@@ -1036,15 +1036,18 @@ const MapArea = ({
         />
 
         {/* 调试信息 - 临时显示 */}
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white p-3 rounded shadow-lg text-xs z-20">
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white p-3 rounded shadow-lg text-xs z-20">
           <div>
-            <strong>City Coordinates:</strong>{" "}
-            {JSON.stringify(cityCoordinates[currentCity])}
+            <strong>City At:</strong>{" "}
+            {cityCoordinates[currentCity] 
+              ? `(${cityCoordinates[currentCity].lat},${cityCoordinates[currentCity].lng}), ${cityCoordinates[currentCity].country}`
+              : 'Loading...'
+            }
           </div>
         </div>
 
         {/* 搜索框 */}
-        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20 flex justify-center bg-white p-4 rounded-lg shadow-md border border-gray-300">
+        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-20 flex justify-center bg-white p-4 rounded-lg shadow-md border border-gray-300">
           <Autocomplete
             onLoad={(ac) => (autoCompleteRef.current = ac)}
             onPlaceChanged={handlePlaceChanged}
